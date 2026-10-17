@@ -16,7 +16,7 @@ Release 里是两个文件：
 | 文件 | 内容 |
 |---|---|
 | `wiki-translater.exe` | 单个可执行文件，约 48 MB。双击打开图形界面，不带任何剧情文本，也不带计划文件 |
-| `岁家剧情.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json` |
+| `sui-story.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json` |
 
 双击 exe 后，程序在本机起一个服务，再用 Chrome 或 Edge 打开一个应用窗口（Windows 自带 Edge 就够）。不装 Python、不写注册表，删掉 exe 就算卸载。
 
@@ -324,7 +324,7 @@ pwsh -File scripts\build_exe.ps1 -WithPlans  # 连 plans/ 和 builtin_plans/ 一
 
 生成 `dist\wiki-translater.exe`（单文件，约 48 MB）。原理是 PyInstaller 把 `prts_story` 包（和 `prts_story/gui/web`）塞进一个可执行文件，运行时解压到临时目录；`scripts/entry.py` 是打包入口，用来避开相对导入在脚本模式下失效的问题。
 
-发布 Release 用两个附件：`dist\wiki-translater.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `岁家剧情.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
+发布 Release 用两个附件：`dist\wiki-translater.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `sui-story.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
 
 ## 常见问题
 
