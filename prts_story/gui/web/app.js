@@ -1012,8 +1012,15 @@
         el("span", { class: "shelf-hint", text: "右键书卡可换格式或删除" }),
         el("button", { class: "link more", text: "全部书目 →", onclick: () => showView("library") })),
     );
+    const shelf = state.recent.filter((it) => (it.files || []).length);
+    if (!shelf.length) {
+      box.append(el("div", { class: "empty" },
+        el("b", { text: "还没有导出过书" }),
+        el("p", { text: "勾好篇目点「整理成书」，生成后的 PDF / Word / EPUB 会出现在这里；只有计划、还没生成的，在「全部书目」里。" })));
+      return;
+    }
     const grid = el("div", { class: "shelf-grid" });
-    for (const item of state.recent.slice(0, 4)) {
+    for (const item of shelf.slice(0, 4)) {
       const pdf = coverFile(item);
       const srcName = (sourceById(item.source_id) || {}).name || item.source_id || "";
       const kinds = [...new Set(item.files.map(f => f.kind))].map(k => k.toUpperCase());
