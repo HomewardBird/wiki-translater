@@ -1,0 +1,334 @@
+{
+ "name": "sui",
+ "title": "明日方舟 · 岁家剧情文字稿",
+ "filePrefix": "岁家剧情文字稿",
+ "source": "PRTS 明日方舟 Wiki（https://prts.wiki）「剧情一览」及各剧情子页面",
+ "fanli": [
+  "一、本稿文字取自 PRTS 明日方舟 Wiki「剧情一览」及各剧情子页面，仅为个人阅读存档，版权归原作方所有。",
+  "二、演出提示按话剧剧本的样子排成居中的浅灰小字：「音乐 · 曲名」为配乐起，「音乐 · 停」为停乐，「换景」为场景切换，「影像」为插入影像；时间轴、淡入淡出、音效、镜头构图等参数一律省略。",
+  "三、台词以「说话人：台词」起头，说话人按出场先后着色，折行对齐到台词一侧；不带说话人、以楷体缩进排的段落为旁白、字幕或贴纸文字。",
+  "四、台词只剩「……」或「——」的行是停顿，版面上单独留白，文字不作改动。",
+  "五、站外内容（特别映像PV《炎：劫争》《炎：界园游览须知》、官号小故事《石语千山》、《游客访谈录》）未收录。",
+  "六、卷次依委托顺序：洪炉示岁→画中人→将进酒→登临意→岁家密录→怀黍离→惊蛰→相见欢→镜中集·界园→辞岁行。",
+  "七、干员档案与干员密录页各配一张头像，其余页面不插图。"
+ ],
+ "volumes": [
+  {
+   "title": "卷一　洪炉示岁",
+   "sections": [
+    {
+     "name": "洪炉示岁",
+     "kind": "story",
+     "pages": [
+      "AF-ST1 洪炉示岁·迎春/NBT",
+      "AF-ST2 洪炉示岁·贺岁/NBT",
+      "AF-ST3 洪炉示岁·拜年/NBT"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "卷二　画中人",
+   "sections": [
+    {
+     "name": "画中人",
+     "kind": "story",
+     "pages": [
+      "WR-ST-1 一钳之恩/NBT",
+      "WR-1 初醒/BEG",
+      "WR-1 初醒/END",
+      "WR-2 墨魉/BEG",
+      "WR-2 墨魉/END",
+      "WR-4 掌柜/BEG",
+      "WR-4 掌柜/END",
+      "WR-5 拙山/BEG",
+      "WR-5 拙山/END",
+      "WR-ST-2 一日之祸/NBT",
+      "WR-6 画中/BEG",
+      "WR-6 画中/END",
+      "WR-8 大梦/BEG",
+      "WR-8 大梦/END",
+      "WR-10 夕/BEG",
+      "WR-10 夕/END",
+      "WR-ST-3 一问之答/NBT"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "卷三　将进酒",
+   "sections": [
+    {
+     "name": "将进酒",
+     "kind": "story",
+     "pages": [
+      "IW-ST-1 客将至/NBT",
+      "IW-1 化物/BEG",
+      "IW-1 化物/END",
+      "IW-2 无寻处/BEG",
+      "IW-2 无寻处/END",
+      "IW-3 光与影/BEG",
+      "IW-3 光与影/END",
+      "IW-4 秉烛/BEG",
+      "IW-4 秉烛/END",
+      "IW-ST-2 万物有灵/NBT",
+      "IW-5 货与人/BEG",
+      "IW-5 货与人/END",
+      "IW-6 传说/BEG",
+      "IW-6 传说/END",
+      "IW-7 乱局/BEG",
+      "IW-7 乱局/END",
+      "IW-9 岁相/BEG",
+      "IW-9 岁相/END",
+      "IW-ST-3 再弈/NBT"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "卷四　登临意",
+   "sections": [
+    {
+     "name": "登临意",
+     "kind": "story",
+     "pages": [
+      "WB-ST-1 忽梦少年事/NBT",
+      "WB-1 塞上春来/BEG",
+      "WB-1 塞上春来/END",
+      "WB-2 沙海黄尘/BEG",
+      "WB-2 沙海黄尘/END",
+      "WB-3 树犹如此/BEG",
+      "WB-3 树犹如此/END",
+      "WB-4 不念往昔/BEG",
+      "WB-4 不念往昔/END",
+      "WB-ST-2 信我所信/NBT",
+      "WB-5 风雨欲来/BEG",
+      "WB-6 瑟瑟秋华/END",
+      "WB-7 “屏风卫”/BEG",
+      "WB-7 “屏风卫”/END",
+      "WB-8 旷古之晤/BEG",
+      "WB-8 旷古之晤/END",
+      "WB-9 “冬藏”/BEG",
+      "WB-9 “冬藏”/END",
+      "WB-ST-3 粘劫收后/NBT"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "卷五　岁家干员密录（年·夕·令·重岳）",
+   "sections": [
+    {
+     "name": "干员密录·年",
+     "kind": "secret",
+     "pages": [
+      "年/干员密录/1"
+     ],
+     "portrait": "年"
+    },
+    {
+     "name": "干员密录·夕",
+     "kind": "secret",
+     "pages": [
+      "夕/干员密录/1"
+     ],
+     "portrait": "夕"
+    },
+    {
+     "name": "干员密录·令",
+     "kind": "secret",
+     "pages": [
+      "令/干员密录/1"
+     ],
+     "portrait": "令"
+    },
+    {
+     "name": "干员密录·重岳",
+     "kind": "secret",
+     "pages": [
+      "重岳/干员密录/1"
+     ],
+     "portrait": "重岳"
+    }
+   ]
+  },
+  {
+   "title": "卷六　怀黍离",
+   "sections": [
+    {
+     "name": "怀黍离",
+     "kind": "story",
+     "pages": [
+      "HS-ST-1 禾下梦/NBT",
+      "HS-1 赴大荒/BEG",
+      "HS-1 赴大荒/END",
+      "HS-2 祭神农/BEG",
+      "HS-2 祭神农/END",
+      "HS-3 早芒种/BEG",
+      "HS-3 早芒种/END",
+      "HS-4 话桑麻/BEG",
+      "HS-4 话桑麻/END",
+      "HS-5 纺绫罗/BEG",
+      "HS-5 纺绫罗/END",
+      "HS-ST-2 织锦缎/NBT",
+      "HS-6 卷赤霞/BEG",
+      "HS-7 梦四时/END",
+      "HS-8 种因/BEG",
+      "HS-8 种因/END",
+      "HS-9 得果/BEG",
+      "HS-9 得果/END",
+      "HS-ST-3 彻风雨/NBT"
+     ]
+    },
+    {
+     "name": "干员密录·黍",
+     "kind": "secret",
+     "pages": [
+      "黍/干员密录/1"
+     ],
+     "portrait": "黍"
+    }
+   ]
+  },
+  {
+   "title": "卷七　惊蛰（干员档案与密录）",
+   "sections": [
+    {
+     "name": "干员档案·惊蛰（五星术师）",
+     "kind": "archive",
+     "pages": [
+      "惊蛰"
+     ],
+     "portrait": "惊蛰"
+    },
+    {
+     "name": "干员密录·惊蛰",
+     "kind": "secret",
+     "pages": [
+      "惊蛰/干员密录/1"
+     ],
+     "portrait": "惊蛰"
+    }
+   ]
+  },
+  {
+   "title": "卷八　相见欢",
+   "sections": [
+    {
+     "name": "相见欢",
+     "kind": "story",
+     "pages": [
+      "OR-ST-1 陈皮菊花茶/NBT",
+      "OR-1 一清二白/BEG",
+      "OR-1 一清二白/END",
+      "OR-2 糖瓜粘/BEG",
+      "OR-2 糖瓜粘/END",
+      "OR-3 油泼扯面/BEG",
+      "OR-3 油泼扯面/END",
+      "OR-4 雪里蕻/BEG",
+      "OR-4 雪里蕻/END",
+      "OR-ST-2 雷公栗/NBT",
+      "OR-6 胜肉火方/BEG",
+      "OR-6 胜肉火方/END",
+      "OR-7 五省盘/BEG",
+      "OR-7 五省盘/END",
+      "OR-8 金玉藏心/BEG",
+      "OR-8 金玉藏心/END",
+      "OR-9 长寿面/BEG",
+      "OR-9 长寿面/END",
+      "OR-ST-3 须问汤/NBT"
+     ]
+    },
+    {
+     "name": "干员密录·余",
+     "kind": "secret",
+     "pages": [
+      "余/干员密录/1"
+     ],
+     "portrait": "余"
+    }
+   ]
+  },
+  {
+   "title": "卷九　镜中集·岁的界园志异",
+   "sections": [
+    {
+     "name": "镜中集",
+     "kind": "story",
+     "pages": [
+      "FM-ST1 胡君/NBT",
+      "FM-ST2 蒲先生/NBT",
+      "FM-ST3 石头记/NBT",
+      "FM-ST4 白锦/NBT",
+      "FM-ST5 失剑客/NBT",
+      "FM-ST6 凌绝顶/NBT",
+      "FM-ST7 小镇志/NBT"
+     ]
+    },
+    {
+     "name": "岁的界园志异",
+     "kind": "story",
+     "pages": [
+      "RO5-BEG/NBT",
+      "RO5-END-1/NBT",
+      "RO5-END-2/NBT",
+      "RO5-END-3/NBT",
+      "RO5-END-4/NBT",
+      "RO5-END-5/NBT"
+     ],
+     "titles": {
+      "RO5-BEG": "序章",
+      "RO5-END-1": "依律镇抚",
+      "RO5-END-2": "长卷留痕",
+      "RO5-END-3": "黑白入玄",
+      "RO5-END-4": "无中生有",
+      "RO5-END-5": "落子无悔"
+     }
+    }
+   ]
+  },
+  {
+   "title": "卷十　辞岁行",
+   "sections": [
+    {
+     "name": "辞岁行",
+     "kind": "story",
+     "pages": [
+      "TA-ST-1 蒙不失诵/NBT",
+      "TA-1 激石波/BEG",
+      "TA-1 激石波/END",
+      "TA-2 大头鬼/BEG",
+      "TA-2 大头鬼/END",
+      "TA-3 聚墨痕/BEG",
+      "TA-3 聚墨痕/END",
+      "TA-4 小雪崩/BEG",
+      "TA-4 小雪崩/END",
+      "TA-5 双飞燕/BEG",
+      "TA-5 双飞燕/END",
+      "TA-6 裹锋/BEG",
+      "TA-6 裹锋/END",
+      "TA-7 相思断/BEG",
+      "TA-7 相思断/END",
+      "TA-8 金错刀/BEG",
+      "TA-8 金错刀/END",
+      "TA-9 气合/BEG",
+      "TA-9 气合/END",
+      "TA-10 镇神头/BEG",
+      "TA-10 镇神头/END",
+      "TA-11 长生劫/BEG",
+      "TA-11 长生劫/END",
+      "TA-ST-2 史不失书/NBT"
+     ]
+    },
+    {
+     "name": "干员密录·望",
+     "kind": "secret",
+     "pages": [
+      "望/干员密录/1"
+     ],
+     "portrait": "望"
+    }
+   ]
+  }
+ ]
+}

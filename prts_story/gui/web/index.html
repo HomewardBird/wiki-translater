@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wiki Translater · 安巢鸟</title>
+<link rel="icon" href="/img/logo.png">
+<link rel="stylesheet" href="/app.css">
+<meta name="token" content="__TOKEN__">
+</head>
+<body>
+<header class="bar">
+  <a class="mark" href="#" id="brand">
+    <img src="/img/logo.png" alt="" class="mark-img">
+    <span class="mark-text"><b>Wiki Translater</b><i>安巢鸟 · 剧情整理</i></span>
+  </a>
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-view="home">整理</button>
+    <button class="tab" data-view="library">书库</button>
+    <button class="tab" data-view="sources">来源</button>
+    <button class="tab" data-view="settings">设置</button>
+  </nav>
+  <div class="bar-end">
+    <span class="stat" id="status-pill"><i></i>就绪</span>
+  </div>
+</header>
+
+<!-- ---------------------------------------------------------------- 整理 -->
+<main id="view-home" class="view view-home">
+  <div class="work">
+
+    <div class="work-main">
+      <div class="work-head">
+        <div class="picker" id="picker">
+          <button class="picker-btn" id="picker-btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="pk-label">来源</span>
+            <b id="pk-name">…</b>
+            <span class="pk-count" id="pk-count"></span>
+            <svg class="pk-caret" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"></path></svg>
+          </button>
+          <div class="pk-menu" id="pk-menu" role="listbox" hidden></div>
+        </div>
+        <div class="work-head-end">
+          <span class="hint-key"><kbd>/</kbd> 聚焦搜索</span>
+          <button class="btn" id="batch-open" title="一次粘贴一大段清单">批量加入</button>
+        </div>
+      </div>
+
+      <div class="search" id="searchbox">
+        <svg class="mag" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+        <input id="q" type="text" autocomplete="off" spellcheck="false"
+               placeholder="输入剧情名、角色名或页面代号">
+        <button class="clear" id="clear" title="清空">×</button>
+      </div>
+
+      <div class="try" id="hints">
+        <span class="try-label">试试</span>
+        <button data-q="画中人">画中人</button>
+        <button data-q="WR-10 夕">WR-10 夕</button>
+        <button data-q="干员密录 夕">干员密录 夕</button>
+        <button data-q="“夕”">“夕”</button>
+      </div>
+
+      <section class="notice" id="index-banner" hidden>
+        <div>
+          <b>这个来源还没有建索引</b>
+          <p>建一次页面索引（只读标题，几秒钟），之后搜索就是本地的、瞬时的。</p>
+        </div>
+        <span class="notice-prog" id="index-prog"></span>
+        <button class="btn primary" id="build-index">建立索引</button>
+      </section>
+
+      <section id="results"></section>
+      <section id="recent-home" class="shelf" hidden></section>
+
+      <section class="plan-sect" id="plan-block" hidden>
+        <h3 class="sect-head">整套整理<span>已经排好卷次和篇目的整本计划，点一下直接开印</span></h3>
+        <div id="plan-list" class="plan-list"></div>
+      </section>
+    </div>
+
+    <aside class="work-side">
+      <section class="side-block" id="sel-block">
+        <h3 class="side-title">本次选集 <span class="num" id="sel-count">0</span></h3>
+        <ol class="sel-list" id="sel-list"></ol>
+        <p class="side-hint" id="sel-empty">在左侧搜索，勾选要收进书里的篇目。</p>
+        <button class="btn primary block" id="sel-go" disabled>整理成书</button>
+      </section>
+
+      <section class="side-block" id="src-info">
+        <h3 class="side-title">当前来源</h3>
+        <div id="src-info-body"></div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<!-- ---------------------------------------------------------------- 书库 -->
+<main id="view-library" class="view view-wide" hidden>
+  <header class="page-head">
+    <h1 class="page-title">书库</h1>
+    <p class="page-sub"><span id="lib-count">0</span> 本 · <code id="lib-root"></code></p>
+  </header>
+  <div id="library-list" class="books"></div>
+</main>
+
+<!-- ---------------------------------------------------------------- 来源 -->
+<main id="view-sources" class="view view-wide" hidden>
+  <header class="page-head">
+    <h1 class="page-title">来源</h1>
+    <p class="page-sub">任何 MediaWiki 站点都能接进来：填 api.php 地址即可。抓取只访问该站域名。</p>
+  </header>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="c-name">来源</th>
+        <th class="c-api">api.php</th>
+        <th class="c-parser">解析</th>
+        <th class="c-index num">索引</th>
+        <th class="c-act"></th>
+      </tr>
+    </thead>
+    <tbody id="source-list"></tbody>
+  </table>
+
+  <div class="form-wrap" id="source-form-wrap">
+    <button class="form-toggle" id="form-toggle" type="button" aria-expanded="false">
+      <span class="plus">+</span><span id="form-title">添加来源</span>
+    </button>
+    <div class="form-body" id="form-body" hidden>
+      <div class="form-grid">
+        <label class="field"><span>显示名</span><input id="f-name" placeholder="例如 明日方舟 · PRTS"></label>
+        <label class="field"><span>api.php 地址</span><input id="f-api" placeholder="https://prts.wiki/api.php"></label>
+        <label class="field"><span>站点主页（可选）</span><input id="f-home" placeholder="https://prts.wiki"></label>
+        <label class="field"><span>解析方式</span>
+          <select id="f-parser">
+            <option value="generic">通用解析（按「角色：台词」切分）</option>
+            <option value="prts">PRTS 模板解析（明日方舟专用）</option>
+          </select>
+        </label>
+        <label class="field wide"><span>建索引用的分类（逗号分隔，可空）</span><input id="f-categories" placeholder="剧情, 干员密录"></label>
+        <label class="field wide"><span>建索引用的标题前缀（逗号分隔，可空）</span><input id="f-prefixes" placeholder="世界任务"></label>
+        <label class="field wide"><span>标题过滤正则（可选）</span><input id="f-regex" placeholder="/BEG$|/END$|/NBT$"></label>
+      </div>
+      <div class="form-foot">
+        <button class="btn" id="f-test">测试连接</button>
+        <span class="probe" id="f-probe"></span>
+        <div class="spacer"></div>
+        <button class="btn ghost" id="form-reset">清空</button>
+        <button class="btn primary" id="f-save">保存来源</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ---------------------------------------------------------------- 设置 -->
+<main id="view-settings" class="view" hidden>
+  <header class="page-head">
+    <h1 class="page-title">设置</h1>
+    <p class="page-sub">产物目录、配置文件与运行环境。</p>
+  </header>
+
+  <section class="sect">
+    <h2 class="sect-title">书籍存放位置</h2>
+    <div class="sect-body">
+      <div class="row">
+        <label class="row-label" for="set-root-input">产物目录</label>
+        <div class="row-value">
+          <div class="inline">
+            <input id="set-root-input" placeholder="留空 = 程序所在目录" spellcheck="false">
+            <button class="btn" id="root-pick">选择…</button>
+            <button class="btn" id="root-save">保存</button>
+          </div>
+          <p class="row-note">抓取缓存、中间文件和导出的书都放这里。已经生成的书不会自动搬家。
+            <button class="link" id="root-reset">恢复默认</button></p>
+          <p class="probe" id="root-hint"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sect">
+    <h2 class="sect-title">打开方式</h2>
+    <div class="sect-body">
+      <div class="row">
+        <label class="row-label">默认格式</label>
+        <div class="row-value">
+          <div class="seg" id="open-kind">
+            <button class="seg-item" type="button" data-kind="auto">自动</button>
+            <button class="seg-item" type="button" data-kind="pdf">PDF</button>
+            <button class="seg-item" type="button" data-kind="docx">Word</button>
+            <button class="seg-item" type="button" data-kind="epub">EPUB</button>
+          </div>
+          <p class="row-note">首页和书库点书时用这个格式打开。单卷、单篇的文件在书库卡片里展开「文件」逐个打开；
+            想临时换格式就右键书卡。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sect">
+    <h2 class="sect-title">运行环境</h2>
+    <div class="sect-body">
+      <div class="row"><span class="row-label">当前生效目录</span>
+        <div class="row-value"><code id="set-root"></code>
+          <button class="link" data-open="root">打开</button></div></div>
+      <div class="row"><span class="row-label">整理者</span>
+        <div class="row-value"><code>安巢鸟</code></div></div>
+      <div class="row"><span class="row-label">配置文件</span>
+        <div class="row-value"><code id="set-settings"></code>
+          <button class="link" data-open="settings-file">打开</button></div></div>
+      <div class="row"><span class="row-label">来源配置</span>
+        <div class="row-value"><code id="set-sources"></code>
+          <button class="link" data-open="sources">打开</button></div></div>
+      <div class="row"><span class="row-label">渲染引擎</span>
+        <div class="row-value"><code>Chromium（随系统 Chrome / Edge）</code></div></div>
+      <div class="row"><span class="row-label">版本</span>
+        <div class="row-value"><code id="set-version"></code></div></div>
+    </div>
+    <p class="sect-note">索引缓存在用户目录，7 天后自动重建；也可以在「来源」里手动重建。</p>
+  </section>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="panel" id="panel" hidden>
+  <div class="panel-head">
+    <b id="panel-title">整理成书</b>
+    <button class="icon-btn" id="panel-close" title="关闭">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</aside>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

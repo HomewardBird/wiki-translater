@@ -1,0 +1,25 @@
+# 缓存与产物（可随时删除重跑）
+cache/
+build/
+out/
+dist/
+release/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

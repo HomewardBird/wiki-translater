@@ -1,0 +1,13 @@
+# 统一换行符：仓库内存 LF，Windows 脚本工作区用 CRLF
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制资源不参与换行/文本合并
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.whl binary
+*.zip binary
