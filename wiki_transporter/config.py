@@ -30,7 +30,7 @@ def _bundled_plan_dirs() -> list[str]:
     meipass = getattr(sys, "_MEIPASS", None)
     if meipass:
         dirs.append(os.path.join(meipass, "plans"))
-        dirs.append(os.path.join(meipass, "prts_story", "builtin_plans"))
+        dirs.append(os.path.join(meipass, "wiki_transporter", "builtin_plans"))
     if getattr(sys, "frozen", False):
         dirs.append(os.path.join(os.path.dirname(sys.executable), "plans"))
         dirs.append(os.path.join(os.path.dirname(sys.executable), "_internal", "plans"))
@@ -165,19 +165,19 @@ def safe_filename(name: str) -> str:
 
 
 def user_data_dir() -> str:
-    """配置与索引的存放位置：%LOCALAPPDATA%\\WikiTranslator（可被环境变量覆盖）。"""
-    env = os.environ.get("WIKITRANSLATOR_HOME")
+    """配置与索引的存放位置：%LOCALAPPDATA%\\WikiTransporter（可被环境变量覆盖）。"""
+    env = os.environ.get("WIKITRANSPORTER_HOME")
     if env:
         path = os.path.abspath(env)
     else:
         base = (os.environ.get("LOCALAPPDATA")
                 or os.environ.get("XDG_DATA_HOME")
                 or os.path.join(os.path.expanduser("~"), ".local", "share"))
-        path = os.path.join(base, "WikiTranslator")
+        path = os.path.join(base, "WikiTransporter")
     try:
         os.makedirs(path, exist_ok=True)
     except OSError:
-        path = os.path.join(tempfile.gettempdir(), "WikiTranslator")
+        path = os.path.join(tempfile.gettempdir(), "WikiTransporter")
         os.makedirs(path, exist_ok=True)
     return path
 
@@ -282,7 +282,7 @@ def source_accent(plan, default: str = "#c8a462") -> str:
 
 def workspace_dir() -> str:
     """产物（out/ cache/ build/）的根目录：环境变量 > 设置里的自定义目录 > 程序目录。"""
-    env = os.environ.get("WIKITRANSLATOR_OUT")
+    env = os.environ.get("WIKITRANSPORTER_OUT")
     if env:
         return os.path.abspath(env)
     custom = load_settings().get("out_root") or ""
@@ -299,7 +299,7 @@ def output_root(explicit: str | None = None) -> str:
     """命令行：用户显式指定 > 环境变量 > 设置里的存放位置 > 当前项目根目录。"""
     if explicit:
         return os.path.abspath(explicit)
-    env = os.environ.get("WIKITRANSLATOR_OUT")
+    env = os.environ.get("WIKITRANSPORTER_OUT")
     if env:
         return os.path.abspath(env)
     custom = load_settings().get("out_root") or ""

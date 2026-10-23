@@ -8,7 +8,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from prts_story.config import Plan  # noqa: E402
+from wiki_transporter.config import Plan  # noqa: E402
 
 
 class TestSuiPlan(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestSuiPlan(unittest.TestCase):
 
     def test_builtin_plan_in_sync(self):
         """仓库里的 plans/sui.json 与包内副本必须一致（防止两处漂移）。"""
-        builtin = os.path.join(ROOT, "prts_story", "builtin_plans", "sui.json")
+        builtin = os.path.join(ROOT, "wiki_transporter", "builtin_plans", "sui.json")
         with open(os.path.join(ROOT, "plans", "sui.json"), encoding="utf-8") as f:
             a = json.load(f)
         with open(builtin, encoding="utf-8") as f:

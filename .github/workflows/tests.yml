@@ -25,5 +25,5 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: CLI help smoke test
         run: |
-          python -m prts_story --help
-          python -m prts_story doctor
+          python -m wiki_transporter --help
+          python -m wiki_transporter doctor

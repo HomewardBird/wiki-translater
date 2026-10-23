@@ -1,6 +1,6 @@
 # 权利与出处（NOTICE）
 
-这是 Wiki Translater 的**唯一**一份权利说明。README 里的「许可与出处」只做概述并指向这里，
+这是 Wiki Transporter 的**唯一**一份权利说明。README 里的「许可与出处」只做概述并指向这里，
 `scripts/pack_release.ps1` 生成的 `说明.txt` 也只指向这里，不另抄一份。
 
 ## 本仓库是什么
@@ -19,7 +19,7 @@
 
 ## 各来源的权利与出处
 
-一个来源 = 一个站点。「支持哪些游戏」由 `prts_story/sources.py` 的 `BUILTIN` 决定，
+一个来源 = 一个站点。「支持哪些游戏」由 `wiki_transporter/sources.py` 的 `BUILTIN` 决定，
 用户在界面里自己填 `api.php` 加进来的来源属于最后一节。
 
 ### 明日方舟 · PRTS（<https://prts.wiki>）

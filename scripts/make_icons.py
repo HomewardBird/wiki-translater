@@ -28,7 +28,7 @@ DEFAULT_PNG = r"E:\Picture\Homewardbird\LOGO实心.png"
 
 ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
 PNG_SIZES = [1024, 512, 256]
-WEB_DIR = os.path.join(ROOT, "prts_story", "gui", "web", "img")
+WEB_DIR = os.path.join(ROOT, "wiki_transporter", "gui", "web", "img")
 
 
 def rasterize_svg(path: str, size: int = 1024) -> Image.Image:

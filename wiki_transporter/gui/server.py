@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Wiki Translater 图形界面（本地 Web 应用）。
+"""Wiki Transporter 图形界面（本地 Web 应用）。
 
 不引入任何 Web 框架：标准库 http.server 起一个只监听 127.0.0.1 的服务，
 用 Chrome/Edge 的 `--app` 模式开一个没有地址栏的窗口，看起来就是一个桌面软件。
@@ -46,7 +46,7 @@ from ..sources import (all_sources, get_source, load_user_sources, normalize_sou
 from ..net import NetError, UnsafeURLError
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
-APP_NAME = "Wiki Translater"
+APP_NAME = "Wiki Transporter"
 APP_CN = "安巢鸟"
 
 

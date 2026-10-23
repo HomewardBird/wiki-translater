@@ -12,7 +12,7 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
 $bookDir = Join-Path (Resolve-Path $Src) $Id
-if (-not (Test-Path $bookDir)) { throw "找不到成品目录：$bookDir（先跑 py -m prts_story all --plan $Id）" }
+if (-not (Test-Path $bookDir)) { throw "找不到成品目录：$bookDir（先跑 py -m wiki_transporter all --plan $Id）" }
 if (-not (Test-Path $Plan)) { throw "找不到计划文件：$Plan" }
 
 $name = '岁家剧情'
@@ -27,13 +27,13 @@ Copy-Item $Plan (Join-Path $pkg "$Id.json") -Force
 $pdfs = @(Get-ChildItem (Join-Path $bookDir 'pdf') -Filter *.pdf -ErrorAction SilentlyContinue)
 $pages = '合订本 PDF 1208 页'
 @(
-  "$name — 明日方舟剧情文字稿（Wiki Translater 排版）",
+  "$name — 明日方舟剧情文字稿（Wiki Transporter 排版）",
   "",
   "sui\        已经排好的成品：pdf\ docx\ epub\ 三个子目录，10 卷 + 全一册",
   "$Id.json     这本书的计划文件",
   "",
   "只想读：直接打开 sui\pdf\ 或 sui\epub\ 里的文件，不需要 exe。",
-  "想重新生成：把 $Id.json 放到 wiki-translater.exe 同级的 plans\ 目录（没有就新建），",
+  "想重新生成：把 $Id.json 放到 wiki-transporter.exe 同级的 plans\ 目录（没有就新建），",
   "            重启 exe，书库里会出现这本书，「整理」页点「整套整理」即可重新印。",
   "",
   "整理与排版：安巢鸟。剧情文本著作权归其权利方所有，wiki 文字来自对应 Wiki 的贡献者；",

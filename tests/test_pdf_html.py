@@ -10,8 +10,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from prts_story.config import Plan
-from prts_story.pdf_html import (build_combined_html, build_toc_html,
+from wiki_transporter.config import Plan
+from wiki_transporter.pdf_html import (build_combined_html, build_toc_html,
                                  build_volume_html, esc, find_chromium,
                                  _blocks_html, _toc_html)
 
@@ -108,23 +108,23 @@ class TestBlocks(unittest.TestCase):
 
 class TestTitleNoise(unittest.TestCase):
     def test_leading_dup_title_is_dropped(self):
-        from prts_story.parse import drop_dup_head
+        from wiki_transporter.parse import drop_dup_head
         blocks = [{"k": "h4", "t": "《千年一叹》"}, {"k": "d", "s": "甲", "t": "一"}]
         out = drop_dup_head(blocks, "《千年一叹》")
         self.assertEqual([b["k"] for b in out], ["d"])
 
     def test_keeps_different_heading(self):
-        from prts_story.parse import drop_dup_head
+        from wiki_transporter.parse import drop_dup_head
         blocks = [{"k": "h4", "t": "第一关（前）"}, {"k": "n", "t": "旁白"}]
         self.assertEqual(len(drop_dup_head(blocks, "AF-ST1 洪炉示岁·迎春")), 2)
 
     def test_crumb_not_repeated(self):
-        from prts_story.style import crumb_redundant
+        from wiki_transporter.style import crumb_redundant
         self.assertTrue(crumb_redundant("洪炉示岁", "AF-ST1 洪炉示岁·迎春"))
         self.assertFalse(crumb_redundant("干员密录·年", "《千年一叹》"))
 
     def test_section_label_drops_repeated_title(self):
-        from prts_story.style import section_label
+        from wiki_transporter.style import section_label
         self.assertEqual(section_label("干员档案·惊蛰（五星术师）", "干员档案"), "惊蛰（五星术师）")
         self.assertEqual(section_label("干员密录·年", "《千年一叹》"), "干员密录·年")
 

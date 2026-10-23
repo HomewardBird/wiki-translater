@@ -114,7 +114,7 @@ def compose_plan(source: Source, entries: list[Entry], title: str | None = None,
         "source_id": source.id,
         "source": "%s（%s）" % (source.name, source.api),
         "fanli": [
-            "本书由 Wiki Translater 从 %s 抓取，仅供个人阅读存档，版权属于原作者与原站点。" % source.name,
+            "本书由 Wiki Transporter 从 %s 抓取，仅供个人阅读存档，版权属于原作者与原站点。" % source.name,
             "整理与排版：%s。" % author_name(),
             "原文为 Wiki 页面文本，经过自动整理：演出提示用灰色小字，音乐/换场单独成行。",
             "若原文包含表格或特殊模板，自动转换可能丢失部分版式，可在原站对照阅读。",

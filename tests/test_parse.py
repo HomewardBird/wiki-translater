@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from prts_story.cli import parse_selection  # noqa: E402
-from prts_story.parse import clean, page_title, parse_archive, parse_story  # noqa: E402
+from wiki_transporter.cli import parse_selection  # noqa: E402
+from wiki_transporter.parse import clean, page_title, parse_archive, parse_story  # noqa: E402
 
 SAMPLE = """{{剧情模拟器|图片数据={{Widget:Data_Image}}|文本数据=
 [background image="bg_yard"]

@@ -1,4 +1,4 @@
-# Wiki Translater
+# Wiki Transporter
 
 把 MediaWiki 上的剧情页（wikitext）抓下来，清洗成纯文本，再排成分卷的 Word / PDF / EPUB，附一份「全一册」合订本。
 
@@ -15,7 +15,7 @@ Release 里是两个文件：
 
 | 文件 | 内容 |
 |---|---|
-| `wiki-translater.exe` | 单个可执行文件，约 48 MB。双击打开图形界面，不带任何剧情文本，也不带计划文件 |
+| `wiki-transporter.exe` | 单个可执行文件，约 48 MB。双击打开图形界面，不带任何剧情文本，也不带计划文件 |
 | `sui-story.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json` |
 
 双击 exe 后，程序在本机起一个服务，再用 Chrome 或 Edge 打开一个应用窗口（Windows 自带 Edge 就够）。不装 Python、不写注册表，删掉 exe 就算卸载。
@@ -26,7 +26,7 @@ Release 里是两个文件：
 2. 搜索并勾选要收进书里的篇目；
 3. 「整理成书」，一次跑完抓取 → 解析 → Word/EPUB → PDF。
 
-勾好的篇目会存成计划文件（`%LOCALAPPDATA%\WikiTranslator\plans\<id>.json`），之后可以反复生成。
+勾好的篇目会存成计划文件（`%LOCALAPPDATA%\WikiTransporter\plans\<id>.json`），之后可以反复生成。
 
 想直接要「岁家剧情」这套：把压缩包里的 `sui.json` 放到 exe 同级的 `plans\` 目录（没有就新建），重启 exe。（夕宝真的很可爱吧！！！）
 书架里会出现这本书，「整理」页也会多一张「整套整理」的卡片，点一下就能重新印全套。
@@ -35,16 +35,16 @@ Release 里是两个文件：
 ### 从源码跑
 
 ```bash
-git clone https://github.com/HomewardBird/wiki-translater.git
-cd wiki-translater
+git clone https://github.com/HomewardBird/wiki-transporter.git
+cd wiki-transporter
 pip install -r requirements.txt
 
-python -m prts_story doctor     # 自检：Python / python-docx / Chromium / pymupdf
-python -m prts_story all        # 抓取 + 生成 Word/EPUB + 导出 PDF
+python -m wiki_transporter doctor     # 自检：Python / python-docx / Chromium / pymupdf
+python -m wiki_transporter all        # 抓取 + 生成 Word/EPUB + 导出 PDF
 ```
 
-`pip install .` 之后可以用 `wiki-translater all`；`prts-story all` 是同一条命令的旧名字，仍然可用。
-不带参数运行（或 `wiki-translater gui`）打开图形界面。
+`pip install .` 之后可以用 `wiki-transporter all`；`wiki-transporter all` 是同一条命令的旧名字，仍然可用。
+不带参数运行（或 `wiki-transporter gui`）打开图形界面。
 
 Windows 上也可以直接双击 `scripts\一键构建.bat`，它会装依赖再跑一遍 `all`。
 
@@ -133,18 +133,18 @@ Word 只能嵌位图，所以占位图在构建时转成 PNG；`pymupdf` 没装�
 ## 命令参考
 
 ```
-wiki-translater doctor                      环境自检（Python / python-docx / Chromium / pymupdf）
-wiki-translater fetch  [--force] [--delay]  抓取原始 wikitext 到 cache/（可断点续抓）
-wiki-translater build  [--volumes 1-3,5] [--no-combined]
+wiki-transporter doctor                      环境自检（Python / python-docx / Chromium / pymupdf）
+wiki-transporter fetch  [--force] [--delay]  抓取原始 wikitext 到 cache/（可断点续抓）
+wiki-transporter build  [--volumes 1-3,5] [--no-combined]
                                             生成 Word + EPUB（默认含全一册合订本）
-wiki-translater pdf    [--volumes ...] [--engine auto|chrome|word|soffice]
+wiki-transporter pdf    [--volumes ...] [--engine auto|chrome|word|soffice]
                                             生成 PDF（默认 Chromium 引擎，目录页码与书签齐全）
-wiki-translater all                         一条龙：fetch → build → pdf
-wiki-translater config [--out 目录]         查看/修改书籍存放位置
-wiki-translater gui                         打开图形界面（不带参数运行也是这个）
+wiki-transporter all                         一条龙：fetch → build → pdf
+wiki-transporter config [--out 目录]         查看/修改书籍存放位置
+wiki-transporter gui                         打开图形界面（不带参数运行也是这个）
 ```
 
-`prts-story` 是旧命令名，参数完全一致。
+`wiki-transporter` 是旧命令名，参数完全一致。
 
 通用参数：
 
@@ -159,11 +159,11 @@ wiki-translater gui                         打开图形界面（不带参数运
 
 ```bash
 # 只重排第 1、5 卷并导出 PDF
-python -m prts_story pdf --volumes 1,5
+python -m wiki_transporter pdf --volumes 1,5
 
 # 抓一次，之后反复调排版（命中缓存，秒级）
-python -m prts_story fetch
-python -m prts_story build
+python -m wiki_transporter fetch
+python -m wiki_transporter build
 ```
 
 ## 计划文件
@@ -204,24 +204,24 @@ python -m prts_story build
   - `secret`：干员密录，篇名取页面里的 `<标题>`，取不到用 `name`；
   - `archive`：干员档案，按「基础档案 / 档案资料一 …」分节；
 - 可选 `titles: {"RO5-END-2": "长卷留痕"}` 自定义篇名，界园志异那种多结局页面靠它；
-- 改完 `python -m prts_story all --plan 我的活动`。
+- 改完 `python -m wiki_transporter all --plan 我的活动`。
 
-`plans/*.json` 和 `%LOCALAPPDATA%\WikiTranslator\plans\*.json` 都会被读取，同名时用户目录优先。
+`plans/*.json` 和 `%LOCALAPPDATA%\WikiTransporter\plans\*.json` 都会被读取，同名时用户目录优先。
 
 ## 存放位置
 
-`out/`、`cache/`、`build/` 默认都在程序目录里。存放位置可改，存在 `%LOCALAPPDATA%\WikiTranslator\settings.json`。
+`out/`、`cache/`、`build/` 默认都在程序目录里。存放位置可改，存在 `%LOCALAPPDATA%\WikiTransporter\settings.json`。
 换位置后，新抓的缓存和新导出的书去新目录，已经生成的书不会自动搬家。
 
 设置页里有「书籍存放位置」，可以直接填路径或「选择文件夹…」，「恢复默认」改回程序目录。命令行等价写法：
 
 ```bash
-python -m prts_story config                     # 查看当前设置
-python -m prts_story config --out "D:\我的书"    # 改位置（自动建目录并验证可写）
-python -m prts_story config --out default       # 恢复默认
+python -m wiki_transporter config                     # 查看当前设置
+python -m wiki_transporter config --out "D:\我的书"    # 改位置（自动建目录并验证可写）
+python -m wiki_transporter config --out default       # 恢复默认
 ```
 
-环境变量 `WIKITRANSLATOR_OUT` 优先级最高，适合临时覆盖。
+环境变量 `WIKITRANSPORTER_OUT` 优先级最高，适合临时覆盖。
 
 ## 署名与出处
 
@@ -253,7 +253,7 @@ python -m prts_story config --out default       # 恢复默认
 
 其余清洗：wikitext 标记（`'''粗体'''`、`{{color|…}}`、`[[链接|文字]]`、`<br>` 等）一律变纯文本；干员密录自动取剧本自带书名（如《千年一叹》），取不到退回「干员密录·X」；同一个人连说几句保持紧凑，换人才拉开间距；无说话人段落按楷体缩进的旁白处理；只剩「……」的行留一点空白。
 
-BWIKI 那三个来源走通用解析（`prts_story/generic.py`）：表格里的对话会被拉平成「角色：台词」，
+BWIKI 那三个来源走通用解析（`wiki_transporter/generic.py`）：表格里的对话会被拉平成「角色：台词」，
 折叠 / 选项卡只能取到文本、取不到语义，排版上按同一套规则处理。
 
 ## PDF 引擎与目录页码
@@ -267,9 +267,9 @@ BWIKI 那三个来源走通用解析（`prts_story/generic.py`）：表格里的
 | `soffice` | LibreOffice | 占位符 | 直接转 PDF，目录页码要在 Word/WPS 里自己更新 |
 
 ```bash
-python -m prts_story pdf                    # Chromium
-python -m prts_story pdf --engine word      # 有 Word 且想和 docx 版式完全一致
-PRTS_CHROME="D:\Chrome\chrome.exe" python -m prts_story pdf   # 指定浏览器
+python -m wiki_transporter pdf                    # Chromium
+python -m wiki_transporter pdf --engine word      # 有 Word 且想和 docx 版式完全一致
+PRTS_CHROME="D:\Chrome\chrome.exe" python -m wiki_transporter pdf   # 指定浏览器
 ```
 
 默认不用 Word 的原因：`ExportAsFixedFormat` / `SaveAs2` 在部分机器上会永久挂起（实测连一页空白文档存成 `.rtf` 都卡死，重启、换默认打印机、停杀软、清 Normal.dotm、重置 Word 注册表都无效）。这类环境问题脚本层修不了，所以 PDF 渲染换成 Chromium，Word 引擎作为可选项保留。
@@ -284,7 +284,7 @@ Word 引擎带三重兜底：清理残留的 `~$xxx.docx` 锁文件；清掉 Wor
 ## 项目结构
 
 ```
-prts_story/
+wiki_transporter/
 ├── config.py      计划加载、路径、设置、来源短名与主色
 ├── sources.py     来源注册表（内置四个）、MediaWiki API 客户端、图片地址解析
 ├── catalog.py     建索引：分类成员 / 标题前缀 → 页面清单
@@ -308,10 +308,10 @@ tests/             解析器、计划完整性、PDF 排版快照测试
 
 想调字号、行距、页边距：
 
-- 三种产物共用的规则在 `prts_story/style.py`，改一处三处都变；
-- PDF 的字体 / 行距 / 页边距 / 封面版式在 `prts_story/pdf_html.py` 顶部的 `CSS`（`@page`、`body`、`p.d`、`p.cues`、`.cover`）；
-- Word 的在 `prts_story/docx_build.py` 的 `setup_doc()`（`line_spacing`、`Pt(11)`、`Cm(2.9)`）；
-- 占位封面的配色与几何在 `prts_story/images.py` 的 `art_svg()`。
+- 三种产物共用的规则在 `wiki_transporter/style.py`，改一处三处都变；
+- PDF 的字体 / 行距 / 页边距 / 封面版式在 `wiki_transporter/pdf_html.py` 顶部的 `CSS`（`@page`、`body`、`p.d`、`p.cues`、`.cover`）；
+- Word 的在 `wiki_transporter/docx_build.py` 的 `setup_doc()`（`line_spacing`、`Pt(11)`、`Cm(2.9)`）；
+- 占位封面的配色与几何在 `wiki_transporter/images.py` 的 `art_svg()`。
 
 改完重跑 `build` / `pdf`，不用重新抓。
 
@@ -322,9 +322,9 @@ pwsh -File scripts\build_exe.ps1            # 不带 plans：exe 是纯工具
 pwsh -File scripts\build_exe.ps1 -WithPlans  # 连 plans/ 和 builtin_plans/ 一起内嵌
 ```
 
-生成 `dist\wiki-translater.exe`（单文件，约 48 MB）。原理是 PyInstaller 把 `prts_story` 包（和 `prts_story/gui/web`）塞进一个可执行文件，运行时解压到临时目录；`scripts/entry.py` 是打包入口，用来避开相对导入在脚本模式下失效的问题。
+生成 `dist\wiki-transporter.exe`（单文件，约 48 MB）。原理是 PyInstaller 把 `wiki_transporter` 包（和 `wiki_transporter/gui/web`）塞进一个可执行文件，运行时解压到临时目录；`scripts/entry.py` 是打包入口，用来避开相对导入在脚本模式下失效的问题。
 
-发布 Release 用两个附件：`dist\wiki-translater.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `sui-story.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
+发布 Release 用两个附件：`dist\wiki-transporter.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `sui-story.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
 
 ## 常见问题
 

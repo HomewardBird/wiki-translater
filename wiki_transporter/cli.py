@@ -2,13 +2,13 @@
 """命令行入口。
 
 用法：
-    wiki-translater doctor                       # 检查环境
-    wiki-translater fetch    [--force]           # 抓取 / 续抓原始 wikitext
-    wiki-translater build    [--volumes 1-3,5]   # 生成 Word + EPUB（默认同时生成合订本）
-    wiki-translater pdf      [--volumes ...]     # 导出 PDF（默认 Chromium 引擎）
-    wiki-translater all                          # 一条龙：抓取 → Word/EPUB → PDF
+    wiki-transporter doctor                       # 检查环境
+    wiki-transporter fetch    [--force]           # 抓取 / 续抓原始 wikitext
+    wiki-transporter build    [--volumes 1-3,5]   # 生成 Word + EPUB（默认同时生成合订本）
+    wiki-transporter pdf      [--volumes ...]     # 导出 PDF（默认 Chromium 引擎）
+    wiki-transporter all                          # 一条龙：抓取 → Word/EPUB → PDF
 
-`prts-story` 是同一条命令的旧名字，仍然可用。
+`wiki-transporter` 是同一条命令的旧名字，仍然可用。
 """
 from __future__ import annotations
 
@@ -187,7 +187,7 @@ def make_pdfs_html(plan: Plan, books: list[dict], selection: list[int],
 
 def cmd_doctor(args) -> int:
     info = doctor()
-    print("Wiki Translater %s" % __version__)
+    print("Wiki Transporter %s" % __version__)
     for k, v in info.items():
         print("  %-14s %s" % (k, v))
     if not info.get("python-docx"):
@@ -273,10 +273,10 @@ def build_parser() -> argparse.ArgumentParser:
                         help="用自己的图片做封面（可给多次，按卷顺序依次使用）")
 
     p = argparse.ArgumentParser(
-        prog="wiki-translater",
+        prog="wiki-transporter",
         description="抓取 MediaWiki 站点的剧情 wikitext，排版成 Word / PDF / EPUB 分卷书。",
     )
-    p.add_argument("--version", action="version", version="Wiki Translater " + __version__)
+    p.add_argument("--version", action="version", version="Wiki Transporter " + __version__)
     sub = p.add_subparsers(dest="command", required=True)
 
     sub.add_parser("doctor", parents=[common], help="检查运行环境").set_defaults(func=cmd_doctor)

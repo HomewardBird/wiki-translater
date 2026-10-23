@@ -7,7 +7,7 @@ set "PY=py"
 where py >nul 2>nul || set "PY=python"
 
 echo ============================================
-echo   Wiki Translater  一键构建
+echo   Wiki Transporter  一键构建
 echo   工作目录: %CD%
 echo ============================================
 echo.
@@ -19,7 +19,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-%PY% -m prts_story all %*
+%PY% -m wiki_transporter all %*
 echo.
 echo 完成。产物在 out\ 目录（docx / pdf / epub 三套）。
 pause

@@ -5,9 +5,9 @@ import os
 import tempfile
 import unittest
 
-from prts_story import images
-from prts_story.config import Plan, source_accent, source_short
-from prts_story.sources import BUILTIN, Source
+from wiki_transporter import images
+from wiki_transporter.config import Plan, source_accent, source_short
+from wiki_transporter.sources import BUILTIN, Source
 
 
 class ArtSvgTest(unittest.TestCase):
@@ -99,7 +99,7 @@ class CoverHtmlTest(unittest.TestCase):
     """封面三档版式：满版 / 画框 / 纯字。"""
 
     def setUp(self):
-        from prts_story.pdf_html import _cover_html
+        from wiki_transporter.pdf_html import _cover_html
 
         self._cover = _cover_html
         self.tmp = tempfile.mkdtemp(prefix="wt-cover-html-")

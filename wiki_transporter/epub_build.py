@@ -252,8 +252,8 @@ def _write_epub(path: str, book_id: str, title: str, chapters: list[tuple[str, s
 
 
 def _book_id(plan: Plan, suffix: str) -> str:
-    # 命名空间前缀保持 prts-story：改它会让同一本书在阅读器里变成另一本书
-    return "urn:uuid:" + str(uuid.uuid5(uuid.NAMESPACE_URL, "prts-story/%s/%s" % (plan.id, suffix)))
+    # 命名空间前缀保持 wiki-transporter：改它会让同一本书在阅读器里变成另一本书
+    return "urn:uuid:" + str(uuid.uuid5(uuid.NAMESPACE_URL, "wiki-transporter/%s/%s" % (plan.id, suffix)))
 
 
 def _media_type(href: str) -> str:

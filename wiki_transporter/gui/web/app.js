@@ -1,4 +1,4 @@
-/* Wiki Translater · 安巢鸟 —— 前端（无框架，单文件）
+/* Wiki Transporter · 安巢鸟 —— 前端（无框架，单文件）
    三个视图：整理（搜索 + 选集 + 最近）、书库（以书为主体）、来源（表格）。
    生成进度全部来自后端任务快照：stage / done / total / progress。 */
 (() => {

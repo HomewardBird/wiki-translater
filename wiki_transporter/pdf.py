@@ -184,7 +184,7 @@ def export_via_word(docx_files: list[str], pdf_dir: str, write_back: bool = Fals
     ps = _find_powershell()
     if not ps:
         raise RuntimeError("未找到 PowerShell，无法调用 Word")
-    tmp = tempfile.mkdtemp(prefix="wiki-translater-pdf-")
+    tmp = tempfile.mkdtemp(prefix="wiki-transporter-pdf-")
     list_file = os.path.join(tmp, "files.txt")
     out_file = os.path.join(tmp, "result.txt")
     script_file = os.path.join(tmp, "export.ps1")

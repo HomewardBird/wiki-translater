@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wiki Translater 一键构建（Linux / macOS）
+# Wiki Transporter 一键构建（Linux / macOS）
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -8,6 +8,6 @@ echo "== 安装依赖 =="
 "$PY" -m pip install -r requirements.txt --quiet
 
 echo "== 抓取 + 排版 + 导出 =="
-"$PY" -m prts_story all "$@"
+"$PY" -m wiki_transporter all "$@"
 
 echo "完成：out/ 目录下 docx / pdf / epub"

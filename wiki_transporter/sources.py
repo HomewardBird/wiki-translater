@@ -14,7 +14,7 @@
     accent        界面主色
 
 内置来源写在 BUILTIN 里；用户自定义来源存进用户配置目录的 sources.json，
-可用 GUI 或 `wiki-translater source add` 添加。用户来源默认 parser=generic。
+可用 GUI 或 `wiki-transporter source add` 添加。用户来源默认 parser=generic。
 """
 from __future__ import annotations
 
