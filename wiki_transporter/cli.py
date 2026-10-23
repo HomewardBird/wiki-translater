@@ -7,8 +7,6 @@
     wiki-transporter build    [--volumes 1-3,5]   # 生成 Word + EPUB（默认同时生成合订本）
     wiki-transporter pdf      [--volumes ...]     # 导出 PDF（默认 Chromium 引擎）
     wiki-transporter all                          # 一条龙：抓取 → Word/EPUB → PDF
-
-`wiki-transporter` 是同一条命令的旧名字，仍然可用。
 """
 from __future__ import annotations
 
@@ -274,7 +272,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = argparse.ArgumentParser(
         prog="wiki-transporter",
-        description="抓取 MediaWiki 站点的剧情 wikitext，排版成 Word / PDF / EPUB 分卷书。",
+        description="抓取 PRTS（明日方舟 Wiki）的剧情 wikitext，排版成 Word / PDF / EPUB 分卷书。",
     )
     p.add_argument("--version", action="version", version="Wiki Transporter " + __version__)
     sub = p.add_subparsers(dest="command", required=True)
@@ -312,20 +310,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("search", help="在命令行里搜索剧情页面")
     s.add_argument("query", help='关键词；用引号精确：search \'"千年一叹"\'')
-    s.add_argument("--source", default="prts", help="来源 id（默认 prts）")
     s.add_argument("--limit", type=int, default=12)
     s.add_argument("--remote", action="store_true", help="同时使用站内搜索")
     s.set_defaults(func=lambda plan, args: _cmd_search(args))
 
-    src = sub.add_parser("source", help="管理 Wiki 来源")
-    src.add_argument("action", choices=("list", "probe", "add", "rm"), help="操作")
-    src.add_argument("name", nargs="?", help="来源 id（probe/add/rm 时使用）")
-    src.add_argument("--api", help="api.php 地址")
-    src.add_argument("--title", help="显示名")
-    src.add_argument("--categories", help="建立索引用的分类，逗号分隔")
-    src.add_argument("--prefixes", help="建立索引用的标题前缀，逗号分隔")
-    src.add_argument("--parser", choices=("prts", "generic"), default="generic")
-    src.set_defaults(func=lambda plan, args: _cmd_source(args))
     cfg = sub.add_parser("config", help="查看 / 修改书籍存放位置")
     cfg.add_argument("--out", help="书籍存放位置；用 --out default 恢复默认")
     cfg.set_defaults(func=lambda plan, args: _cmd_config(args))
@@ -357,13 +345,12 @@ def _cmd_gui(args) -> int:
 
 def _cmd_search(args) -> int:
     from .catalog import build_catalog, load_catalog, search
-    from .sources import get_source
+    from .sources import PRTS
 
-    source = get_source(args.source)
-    cat = load_catalog(source)
+    cat = load_catalog(PRTS)
     if not cat.entries:
-        print("首次使用，正在建立索引（%s）…" % source.name)
-        cat = build_catalog(source, progress=lambda d, t, m: print("  " + m))
+        print("首次使用，正在建立索引（%s）…" % PRTS.name)
+        cat = build_catalog(PRTS, progress=lambda d, t, m: print("  " + m))
     res = search(cat, args.query, limit=args.limit, remote=args.remote)
     if res.get("did_you_mean"):
         d = res["did_you_mean"]
@@ -374,45 +361,6 @@ def _cmd_search(args) -> int:
     print("%s（%d 个结果）" % ("精确匹配" if res["mode"] == "exact" else "搜索结果", res["total"]))
     for r in res["results"]:
         print("  %-28s %-10s %s" % (r["name"][:28], r["code"] or "", r["title"]))
-    return 0
-
-
-def _cmd_source(args) -> int:
-    from .sources import (all_sources, get_source, load_user_sources, normalize_source,
-                          probe, save_user_sources)
-
-    if args.action == "list":
-        for s in all_sources():
-            print("  %-12s %-24s %-8s %s%s"
-                  % (s.id, s.name, s.parser, s.api, "（内置）" if s.builtin else ""))
-        return 0
-    if args.action == "probe":
-        s = get_source(args.name or "prts")
-        info = probe(s)
-        for k, v in info.items():
-            print("  %-12s %s" % (k, v))
-        return 0
-    if args.action == "rm":
-        users = [s for s in load_user_sources() if s.id != args.name]
-        save_user_sources(users)
-        print("已删除来源：%s（已抓取的缓存保留）" % args.name)
-        return 0
-    # add
-    if not args.api:
-        print("添加来源需要 --api https://<站点>/api.php")
-        return 2
-    src = normalize_source({
-        "id": args.name,
-        "name": args.title or args.name,
-        "api": args.api,
-        "parser": args.parser,
-        "categories": args.categories or "",
-        "prefixes": args.prefixes or "",
-    })
-    users = [s for s in load_user_sources() if s.id != src.id]
-    users.append(src)
-    save_user_sources(users)
-    print("已保存：%s → %s" % (src.name, src.api))
     return 0
 
 
@@ -430,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
             build_parser().print_help()
             return 1
     args = build_parser().parse_args(argv)
-    if not hasattr(args, "root"):  # gui / search / source 不需要计划文件
+    if not hasattr(args, "root"):  # gui / search / config 不需要计划文件
         return args.func(None, args)
     root = output_root(args.root)
     if args.func is cmd_doctor:

@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .config import Plan, ensure_dir, safe_filename
 from .net import NetError, UnsafeURLError
-from .sources import Source, get_source
+from .sources import PRTS, Source
 
 
 class FetchError(RuntimeError):
@@ -42,7 +42,7 @@ class _Limiter:
 
 
 def _source_for(plan: Plan) -> Source:
-    return get_source(plan.data.get("source_id") or "prts")
+    return PRTS
 
 
 def fetch_titles(plan: Plan, titles: list[str], source: Source | None = None,

@@ -4,10 +4,9 @@
 两类图，都存进 `cache/img/`，构建时只读本地文件：
 
 * **干员头像**——只给 PRTS 的「干员档案 / 干员密录」页配一张，
-  命名固定（`文件:头像_<干员名>.png`，180×180）。没有头像约定的来源直接跳过。
-* **封面立绘**——每卷一张。各站命名不统一，写在 `sources.py` 的 `hero_templates` 里
-  （PRTS `立绘_年_1`、鸣潮 `角色 秧秧 立绘`、1999 `立绘 星锑 01`、原神 `伊法立绘`），
-  模板猜不中时在文件命名空间搜一次兜底。都拿不到时本地生成一张占位图。
+  命名固定（`文件:头像_<干员名>.png`，180×180）。
+* **封面立绘**——每卷一张。命名模板写在 `sources.py` 的 `hero_templates` 里
+  （PRTS `立绘_年_1`），模板猜不中时在文件命名空间搜一次兜底。都拿不到时本地生成一张占位图。
 
 下载走 net.safe_get（域名白名单 + 私网拒绝）。
 """
@@ -19,7 +18,7 @@ import time
 
 from .config import Plan, ensure_dir, safe_filename, user_data_dir
 from .net import NetError
-from .sources import Source, download_image, get_source, image_url, search_files
+from .sources import PRTS, Source, download_image, image_url, search_files
 
 
 class ImageError(RuntimeError):
@@ -27,12 +26,12 @@ class ImageError(RuntimeError):
 
 
 def _source(plan: Plan) -> Source:
-    return get_source(plan.data.get("source_id") or "prts")
+    return PRTS
 
 
 def portrait_url(operator: str, source: Source | None = None) -> str | None:
     """查 `文件:头像_<名>.png` 的实际下载地址。"""
-    source = source or get_source("prts")
+    source = source or PRTS
     try:
         return image_url(source, "文件:头像_%s.png" % operator)
     except NetError as e:

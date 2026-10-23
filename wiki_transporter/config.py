@@ -256,28 +256,22 @@ def source_short(plan) -> str:
     """这本书的来源短名（写进总目录、凡例与文档属性）。
 
     计划里的 source 字段是「显示名（api 地址）」这种写法，这里只取显示名；
-    老计划没有 source 时退回来源注册表的名字，保证不会印错出处。
+    老计划没有 source 时用 PRTS 的显示名，保证不会印错出处。
     """
     text = (getattr(plan, "data", {}) or {}).get("source") or ""
     short = re.split(r"[（(]", text.strip(), maxsplit=1)[0].strip()
     if short:
         return short
-    try:
-        from .sources import get_source
+    from .sources import PRTS
 
-        return get_source(getattr(plan, "source_id", "prts")).name
-    except Exception:  # noqa: BLE001  来源表坏了也不该让排版失败
-        return "对应 Wiki"
+    return PRTS.name
 
 
 def source_accent(plan, default: str = "#c8a462") -> str:
     """来源主色（封面装饰线、占位图渐变都用它）。"""
-    try:
-        from .sources import get_source
+    from .sources import PRTS
 
-        return get_source(getattr(plan, "source_id", "prts")).accent or default
-    except Exception:  # noqa: BLE001
-        return default
+    return PRTS.accent or default
 
 
 def workspace_dir() -> str:

@@ -218,15 +218,7 @@ def block_chars(blocks: list[dict]) -> int:
 
 
 def build_books(plan: Plan, strict: bool = True) -> list[dict]:
-    """读取缓存，按 plan 组装成分卷书籍数据。
-
-    PRTS 走专用模板解析；其他 Wiki 走通用 wikitext 解析（generic.py）。
-    """
-    if getattr(plan, "source_id", "prts") != "prts":
-        from .generic import build_books as build_generic
-
-        return build_generic(plan, strict=strict)
-
+    """读取缓存，按 plan 组装成分卷书籍数据（PRTS 模板解析）。"""
     books: list[dict] = []
     missing: list[str] = []
 

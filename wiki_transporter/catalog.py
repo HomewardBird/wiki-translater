@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-"""页面索引与搜索：输入「剧情名字」，找到对应的 Wiki 页面。
+"""页面索引与搜索：输入「剧情名字」，找到对应的 PRTS 页面。
 
-索引来源（按顺序合并、去重）：
-    source.categories   分类成员，例如 PRTS 的「分类:剧情」「分类:干员密录」
-    source.prefixes     标题前缀，例如「世界任务」
-    source.page_regex   再按正则过滤一道
+索引来源：source.categories（分类成员，PRTS 的「分类:剧情」「分类:干员密录」）。
 索引缓存在用户目录，默认 7 天刷新一次，可按需强制重建。
 
 搜索分三种：
@@ -25,7 +22,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
-from .sources import Source, category_members, prefix_pages, search_pages
+from .sources import Source, category_members, search_pages
 
 INDEX_VERSION = 5
 CACHE_TTL = 7 * 24 * 3600
@@ -237,22 +234,13 @@ def build_catalog(source: Source, progress=None, force: bool = False) -> Catalog
             titles += category_members(source, cat_name)
         except Exception as e:  # 分类不存在 / 网络问题都不致命
             say("分类 %s 读取失败：%s" % (cat_name, str(e)[:80]))
-    for prefix in source.prefixes:
-        say("扫描前缀：%s" % prefix)
-        try:
-            titles += prefix_pages(source, prefix, limit=2000)
-        except Exception as e:
-            say("前缀 %s 扫描失败：%s" % (prefix, str(e)[:80]))
 
     seen, entries = set(), []
-    pattern = re.compile(source.page_regex) if source.page_regex else None
     for title in titles:
         if title in seen:
             continue
         seen.add(title)
         if _skip_title(title):
-            continue
-        if pattern and not pattern.search(title):
             continue
         entries.append(_classify(title, source))
     entries.sort(key=lambda e: (e.kind, e.code, e.name))

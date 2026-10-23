@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""封面素材：占位图的生成规则、来源立绘命名、透明通道判断。全部不联网。"""
+"""封面素材：占位图的生成规则、立绘命名、透明通道判断。全部不联网。"""
 import json
 import os
 import tempfile
@@ -7,7 +7,7 @@ import unittest
 
 from wiki_transporter import images
 from wiki_transporter.config import Plan, source_accent, source_short
-from wiki_transporter.sources import BUILTIN, Source
+from wiki_transporter.sources import PRTS, Source
 
 
 class ArtSvgTest(unittest.TestCase):
@@ -31,17 +31,12 @@ class ArtSvgTest(unittest.TestCase):
 
 
 class SourceHeroTest(unittest.TestCase):
-    def test_every_builtin_declares_hero_templates(self):
-        for src in BUILTIN:
-            self.assertTrue(src.hero_templates, src.id)
-            self.assertTrue(src.hero_search, src.id)
+    def test_prts_declares_hero_templates(self):
+        self.assertTrue(PRTS.hero_templates)
+        self.assertTrue(PRTS.hero_search)
 
-    def test_prts_and_bwiki_naming(self):
-        by_id = {s.id: s for s in BUILTIN}
-        self.assertIn("文件:立绘_%s_1.png", by_id["prts"].hero_templates)
-        self.assertIn("文件:角色 %s 立绘.png", by_id["mc-wiki"].hero_templates)
-        self.assertIn("文件:立绘 %s 01.png", by_id["reverse1999-wiki"].hero_templates)
-        self.assertIn("文件:%s立绘.png", by_id["ys-wiki"].hero_templates)
+    def test_prts_hero_naming(self):
+        self.assertIn("文件:立绘_%s_1.png", PRTS.hero_templates)
 
     def test_custom_source_without_templates_uses_default(self):
         src = Source(id="x", name="x", api="https://x.invalid/api.php")
@@ -82,17 +77,17 @@ class SourceLabelTest(unittest.TestCase):
         return Plan.load(self.tmp, "t")
 
     def test_label_uses_plan_source_without_api_url(self):
-        plan = self._plan({"title": "t", "source": "原神 · BWIKI（https://wiki.biligame.com/ys/api.php）",
+        plan = self._plan({"title": "t", "source": "明日方舟 · PRTS（https://prts.wiki/api.php）",
                            "volumes": []})
-        self.assertEqual(source_short(plan), "原神 · BWIKI")
+        self.assertEqual(source_short(plan), "明日方舟 · PRTS")
 
-    def test_label_falls_back_to_registry(self):
-        plan = self._plan({"title": "t", "source_id": "mc-wiki", "volumes": []})
-        self.assertEqual(source_short(plan), "鸣潮 · BWIKI")
+    def test_label_falls_back_to_prts(self):
+        plan = self._plan({"title": "t", "volumes": []})
+        self.assertEqual(source_short(plan), "明日方舟 · PRTS")
 
-    def test_accent_follows_source(self):
-        plan = self._plan({"title": "t", "source_id": "reverse1999-wiki", "volumes": []})
-        self.assertEqual(source_accent(plan), "#7ac7c4")
+    def test_accent_is_prts_gold(self):
+        plan = self._plan({"title": "t", "volumes": []})
+        self.assertEqual(source_accent(plan), "#d9a441")
 
 
 class CoverHtmlTest(unittest.TestCase):
@@ -105,7 +100,7 @@ class CoverHtmlTest(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="wt-cover-html-")
         os.makedirs(os.path.join(self.tmp, "plans"))
         with open(os.path.join(self.tmp, "plans", "t.json"), "w", encoding="utf-8") as f:
-            json.dump({"title": "书", "source": "原神 · BWIKI（https://x/api.php）",
+            json.dump({"title": "书", "source": "明日方舟 · PRTS（https://prts.wiki/api.php）",
                        "volumes": []}, f, ensure_ascii=False)
         self.plan = Plan.load(self.tmp, "t")
         self.img = os.path.join(self.tmp, "art.png")
@@ -116,7 +111,7 @@ class CoverHtmlTest(unittest.TestCase):
         html = self._cover(self.plan, "卷一", "", ["第 1 卷"], (self.img, "bleed"))
         self.assertIn('<div class="cover"', html)
         self.assertIn("--hero:url", html)
-        self.assertIn("原神 · BWIKI", html)          # 系列名取来源，不写死明日方舟
+        self.assertIn("明日方舟 · PRTS", html)          # 系列名取来源，不写死
 
     def test_framed_class(self):
         html = self._cover(self.plan, "卷一", "", [], (self.img, "framed"))

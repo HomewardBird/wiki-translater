@@ -262,7 +262,7 @@ def safe_get(url: str, *, allowed_hosts=None, timeout: float = DEFAULT_TIMEOUT,
              expect: tuple[str, ...] | None = None, attempts: int = 3) -> Response:
     """安全地 GET 一个 URL，返回 Response。任何不安全输入都抛 UnsafeURLError。
 
-    对站点限流 / 风控（429、5xx、BWIKI 的 567 等）自动退避重试，避免偶发失败中断整本书。
+    对站点限流 / 风控（429、5xx、站点风控的 567 等）自动退避重试，避免偶发失败中断整本书。
     """
     _validate_url_shape(url)
     hdrs = {"User-Agent": USER_AGENT, "Accept": "*/*"}

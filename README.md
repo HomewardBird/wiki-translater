@@ -1,9 +1,8 @@
 # Wiki Transporter
 
-把 MediaWiki 上的剧情页（wikitext）抓下来，清洗成纯文本，再排成分卷的 Word / PDF / EPUB，附一份「全一册」合订本。
+把 PRTS（明日方舟 Wiki）上的剧情页 wikitext 抓下来，清洗成纯文本，再排成分卷的 Word / PDF / EPUB，附一份「全一册」合订本。
 
-内置四个来源：明日方舟（PRTS）、原神（BWIKI）、重返未来：1999（BWIKI）、鸣潮（BWIKI）。
-也可以填任何 MediaWiki 站点的 `api.php` 自己加。仓库里带一份「岁家剧情」计划：10 卷 / 142 篇 / 约 67 万字，合订本 PDF 1208 页。
+仓库带一份「岁家剧情」计划：10 卷 / 142 篇 / 约 67 万字，合订本 PDF 1208 页。
 
 MIT License · Python 3.9+ · 运行依赖只有 `python-docx`（PDF 收尾用 `pymupdf`，不装也能出 PDF）
 
@@ -20,16 +19,16 @@ Release 里是两个文件：
 
 双击 exe 后，程序在本机起一个服务，再用 Chrome 或 Edge 打开一个应用窗口（Windows 自带 Edge 就够）。不装 Python、不写注册表，删掉 exe 就算卸载。
 
-界面在四个页签里走完流程：
+界面里的流程就三步：
 
-1. 整理 → 选来源 → 「建立索引」（只抓页面标题，几秒钟）；
+1. 「建立索引」——只抓页面标题，几秒钟；
 2. 搜索并勾选要收进书里的篇目；
-3. 「整理成书」，一次跑完抓取 → 解析 → Word/EPUB → PDF。
+3. 「整理成书」——一次跑完抓取 → 解析 → Word/EPUB → PDF。
 
 勾好的篇目会存成计划文件（`%LOCALAPPDATA%\WikiTransporter\plans\<id>.json`），之后可以反复生成。
 
 想直接要「岁家剧情」这套：把压缩包里的 `sui.json` 放到 exe 同级的 `plans\` 目录（没有就新建），重启 exe。（夕宝真的很可爱吧！！！）
-书架里会出现这本书，「整理」页也会多一张「整套整理」的卡片，点一下就能重新印全套。
+书架里会出现这本书，点一下就能重新印全套。
 压缩包里的 `sui/` 是成品，不装 exe 也能直接读。
 
 ### 从源码跑
@@ -43,27 +42,21 @@ python -m wiki_transporter doctor     # 自检：Python / python-docx / Chromium
 python -m wiki_transporter all        # 抓取 + 生成 Word/EPUB + 导出 PDF
 ```
 
-`pip install .` 之后可以用 `wiki-transporter all`；`wiki-transporter all` 是同一条命令的旧名字，仍然可用。
-不带参数运行（或 `wiki-transporter gui`）打开图形界面。
+`pip install .` 之后可以用 `wiki-transporter all`；不带参数运行（或 `wiki-transporter gui`）打开图形界面。
 
 Windows 上也可以直接双击 `scripts\一键构建.bat`，它会装依赖再跑一遍 `all`。
 
-## 支持的来源
+## 只做 PRTS
 
-内置来源按这个顺序显示：
+1.5.0 起本项目只对接 PRTS：早期版本带的 BWIKI（原神 / 重返未来：1999 / 鸣潮）来源、通用 wikitext 解析 `generic.py`、
+以及 `source add` 这类来源管理命令都已移除。旧计划文件里残留的 `source_id` 会被忽略，一律按 PRTS 抓取和解析。
 
-| # | 游戏 | 站点 | 剧情索引 | 解析 |
-|---|---|---|---|---|
-| 1 | 明日方舟 | PRTS（prts.wiki） | 分类：剧情 / 干员密录 | 专用模板解析，演出提示最完整 |
-| 2 | 原神 | BWIKI | 分类：任务剧情 / 魔神任务 / 传说任务 / 活动剧情 | 通用解析 |
-| 3 | 重返未来：1999 | BWIKI | 分类：活动章节 / 主线章节 | 通用解析（NS.01 这类编号章节） |
-| 4 | 鸣潮 | BWIKI | 分类：任务回顾 | 通用解析 |
+| 站点 | 剧情索引 | 解析 |
+|---|---|---|
+| PRTS（prts.wiki） | 分类：剧情 / 干员密录 | 专用模板解析，演出提示最完整 |
 
-早期版本内置的「蔚蓝档案 / 崩坏：星穹铁道 / 绝区零」已移除：这三个站点的分类早已改名或清空，建索引只能拿到活动预约页一类的非剧情页面。需要的话在「来源 → 添加来源」自己填 `api.php` 接回来。
-
-BWIKI（wiki.biligame.com）有站点级风控，请求密集时返回 HTTP 567。程序会退避重试 3 次，仍失败会明确报「站点风控拦截了这次请求」，隔几分钟再试。PRTS 不受影响。
-
-各来源的文字与美术权利归属、抓取方式和条款，逐站写在 [NOTICE.md](NOTICE.md)；本仓库不含任何剧情原文。
+抓取走 `https://prts.wiki/api.php`，默认 0.35 秒/页；站点偶发 429 / 5xx 会退避重试 3 次。
+文字与美术的权利归属、抓取方式与使用条件写在 [NOTICE.md](NOTICE.md)；本仓库不含任何剧情原文。
 
 ## 生成结果
 
@@ -103,30 +96,21 @@ build/sui/books.json             # 解析后的结构化中间产物，可二次
 ```
 
 正文版式：宋体 11pt、行距 1.55、A4 边距 2.9cm（每行约 38 字）、每篇另起页。
+EPUB 的内联样式带 `!important`，不加载出版方 CSS 的阅读器（KoodoReader 等）也能保住说话人配色与字号。
 
 ## 封面
 
 每卷一张封面图，取该卷出场最多的角色（密录优先用计划里 `portrait` 声明的干员），
-按来源的立绘命名去下载，存进 `cache/img/`，再次生成时直接复用：
-
-| 来源 | 立绘命名 |
-|---|---|
-| 明日方舟 · PRTS | `文件:立绘_<角色>_1.png`、`立绘_<角色>_2.png`、`半身像_<角色>_1.png` |
-| 原神 · BWIKI | `文件:<角色>立绘.png`、`文件:<角色>抽卡立绘.png` |
-| 鸣潮 · BWIKI | `文件:角色 <角色> 立绘.png`、`文件:角色 <角色> 超立绘.png` |
-| 重返未来：1999 · BWIKI | `文件:立绘 <角色> 01.png`、`文件:立绘 <角色> 02.png` |
-
-命名不在表里的来源（自己加的、或者站点改过名的），会在文件命名空间里搜「<角色>立绘」兜底；
-搜到的图标、技能图、道具图按文件名和尺寸过滤掉。
+按 `文件:立绘_<角色>_1.png`、`立绘_<角色>_2.png`、`半身像_<角色>_1.png` 的命名去下载，
+存进 `cache/img/`，再次生成时直接复用。
 
 拿到图之后按图的性质分两种版式：
 
 - **透明底立绘**（PRTS 那套）：满版叠在封面右侧，深色渐变压上来，和标题同处一个画面；
-- **不透明图 / 画面上自带字**（原神抽卡立绘属于这种）：放进右下角一块竖版画框，边缘渐隐，不压标题。
+- **不透明图 / 画面上自带字**：放进右下角一块竖版画框，边缘渐隐，不压标题。
 
-一张都拿不到时，用本机生成一张**占位封面**：来源强调色的竖向渐变 + 一个简笔剪影，
-不联网、不含任何第三方美术，配色跟着来源走（PRTS 金、原神 绿、1999 青、鸣潮 蓝灰）。
-占位图在 `cache/img/占位_<来源>.png`，同目录还有 SVG 版（`占位_<来源>.svg`）。
+一张都拿不到时，用本机生成一张**占位封面**：金色竖向渐变 + 一个简笔剪影，
+不联网、不含任何第三方美术。占位图在 `cache/img/占位_prts.png`，同目录还有 SVG 版。
 
 Word 只能嵌位图，所以占位图在构建时转成 PNG；`pymupdf` 没装时 Word 退回纯字封面，PDF / EPUB 不受影响。
 
@@ -136,15 +120,14 @@ Word 只能嵌位图，所以占位图在构建时转成 PNG；`pymupdf` 没装�
 wiki-transporter doctor                      环境自检（Python / python-docx / Chromium / pymupdf）
 wiki-transporter fetch  [--force] [--delay]  抓取原始 wikitext 到 cache/（可断点续抓）
 wiki-transporter build  [--volumes 1-3,5] [--no-combined]
-                                            生成 Word + EPUB（默认含全一册合订本）
+                                             生成 Word + EPUB（默认含全一册合订本）
 wiki-transporter pdf    [--volumes ...] [--engine auto|chrome|word|soffice]
-                                            生成 PDF（默认 Chromium 引擎，目录页码与书签齐全）
+                                             生成 PDF（默认 Chromium 引擎，目录页码与书签齐全）
 wiki-transporter all                         一条龙：fetch → build → pdf
+wiki-transporter search 关键词               在命令行里搜索剧情页面（--remote 叠加站内搜索）
 wiki-transporter config [--out 目录]         查看/修改书籍存放位置
 wiki-transporter gui                         打开图形界面（不带参数运行也是这个）
 ```
-
-`wiki-transporter` 是旧命令名，参数完全一致。
 
 通用参数：
 
@@ -173,7 +156,6 @@ python -m wiki_transporter build
 ```json
 {
   "title": "明日方舟 · 某某活动剧情文字稿",
-  "source_id": "prts",
   "fanli": ["凡例第一条", "凡例第二条"],
   "volumes": [
     {
@@ -197,7 +179,6 @@ python -m wiki_transporter build
 ```
 
 - `pages` 填 wiki 页面名，就是 `https://prts.wiki/w/` 后面的部分，`/` 不要转义；
-- `source_id` 决定用哪个来源抓取和解析，缺省是 `prts`；
 - `portrait` 给这一节配干员头像，也是封面主角的首选；
 - `kind` 决定篇名的取法：
   - `story`：普通剧情，`XXX/BEG` →「（行动前）」、`/END` →「（行动后）」、`/NBT` 去掉后缀；
@@ -229,9 +210,9 @@ python -m wiki_transporter config --out default       # 恢复默认
 以及每本书封面与「凡例」里的「整理与排版：安巢鸟。」一行。
 
 书里印的来源（凡例第一条、总目录页脚、Word 备注、EPUB 的 `dc:description`、PDF 的 `subject` / `keywords`）
-取自计划实际使用的来源，不会写死「明日方舟」。
+写的是「明日方舟 · PRTS」。
 
-文字与美术的权利归属、各站的抓取方式与使用条件，逐站写在 [NOTICE.md](NOTICE.md)。
+文字与美术的权利归属、抓取方式与使用条件写在 [NOTICE.md](NOTICE.md)。
 本仓库不附带任何剧情原文，生成物仅供个人阅读存档，禁止商用或付费分发；
 抓取请保持间隔（默认 0.35s/页），不要并发轰炸 wiki。
 
@@ -252,9 +233,6 @@ python -m wiki_transporter config --out default       # 恢复默认
 原始页里的舞台指令大多是引擎资源 id（`bg_rooftop_2`、`$darkness01_loop`），直接印出来像乱码。这里把它们排成话剧剧本式的舞台提示：居中、疏字距的浅灰小字，连续几条合并成一组。这些参数占原页字符约 70%，全部丢掉，只留「配乐起 / 停乐 / 换景 / 影像」这几类。
 
 其余清洗：wikitext 标记（`'''粗体'''`、`{{color|…}}`、`[[链接|文字]]`、`<br>` 等）一律变纯文本；干员密录自动取剧本自带书名（如《千年一叹》），取不到退回「干员密录·X」；同一个人连说几句保持紧凑，换人才拉开间距；无说话人段落按楷体缩进的旁白处理；只剩「……」的行留一点空白。
-
-BWIKI 那三个来源走通用解析（`wiki_transporter/generic.py`）：表格里的对话会被拉平成「角色：台词」，
-折叠 / 选项卡只能取到文本、取不到语义，排版上按同一套规则处理。
 
 ## PDF 引擎与目录页码
 
@@ -286,13 +264,11 @@ Word 引擎带三重兜底：清理残留的 `~$xxx.docx` 锁文件；清掉 Wor
 ```
 wiki_transporter/
 ├── config.py      计划加载、路径、设置、来源短名与主色
-├── sources.py     来源注册表（内置四个）、MediaWiki API 客户端、图片地址解析
-├── catalog.py     建索引：分类成员 / 标题前缀 → 页面清单
+├── sources.py     PRTS 来源定义、MediaWiki API 客户端、图片地址解析
+├── catalog.py     建索引：分类成员 → 页面清单
 ├── net.py         出站请求：域名白名单、私网拒绝、重定向与体积上限
 ├── fetch.py       MediaWiki API 抓取（缓存 / 重试 / 限速）
 ├── parse.py       PRTS wikitext → 结构化 blocks（台词/旁白/提示/选项）
-├── generic.py     通用 wikitext 解析（非 PRTS 来源）
-├── wikitext.py    wikitext 清洗
 ├── style.py       三种产物共用的排版规则（说话人配色、舞台提示、停顿留白、标题去重）
 ├── images.py      头像 / 立绘下载与缓存、透明通道判断、占位封面生成
 ├── docx_build.py  Word 排版（分卷 / 总目录 / 合订本共享同一套样式）
@@ -326,13 +302,19 @@ pwsh -File scripts\build_exe.ps1 -WithPlans  # 连 plans/ 和 builtin_plans/ 一
 
 发布 Release 用两个附件：`dist\wiki-transporter.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `sui-story.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
 
+## 更新日志
+
+- **1.5.0**：只保留 PRTS。移除 BWIKI 三个来源、通用解析 `generic.py`、`wikitext.py` 与 `source add/rm/probe` 命令；`search` 去掉 `--source`。
+- **1.4.0**：项目改名 Wiki Transporter，包 `wiki_transporter`、exe `wiki-transporter`。
+- **1.3.x**：EPUB 内联样式加 `!important`，兼容不加载出版方 CSS 的阅读器。
+
 ## 常见问题
 
 抓取失败或某些页面缺？
-PRTS 偶发 429 或超时，重跑 `fetch` 会跳过已下载的页面补抓。长期抓不到可以手动打开 `https://prts.wiki/w/页面名`，复制编辑框里的 wikitext，存成 `cache/raw/sui/<页面名把 / : * ? " < > | 换成 _>.txt`，再 `build`。在图形界面里同样可以在「来源」页对单页重试。
+PRTS 偶发 429 或超时，重跑 `fetch` 会跳过已下载的页面补抓。长期抓不到可以手动打开 `https://prts.wiki/w/页面名`，复制编辑框里的 wikitext，存成 `cache/raw/sui/<页面名把 / : * ? " < > | 换成 _>.txt`，再 `build`。在图形界面里同样可以对单页重试。
 
 封面是空白 / 没有立绘？
-先看该卷主角在对应站点有没有立绘文件（命名见上面的「封面」一节），没有就会用本地占位图。
+先看该卷主角在 PRTS 有没有立绘文件（命名见上面的「封面」一节），没有就会用本地占位图。
 想换掉占位图，把图放到 `cache/img/立绘_<角色>.png` 再跑即可（已有文件优先复用）。
 
 能只出 EPUB 不出 PDF 吗？
