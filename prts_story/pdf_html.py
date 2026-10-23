@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import html
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 import urllib.parse
+from functools import lru_cache
 
 from .config import Plan, author_name, ensure_dir, safe_filename, source_short
 from .images import cached_portrait
@@ -182,6 +184,44 @@ p.c { font-family: "楷体", KaiTi, "Kaiti SC", serif; font-size: 9.5pt; color: 
 
 HEAD = ('<!DOCTYPE html>\n<html lang="zh-CN"><head><meta charset="utf-8"/>'
         "<title>%s</title>\n<style>%s</style></head><body>\n")
+
+# 字号倍率：只放大/缩小所有 pt（字号、行距、段距），cm 这类版心尺寸与页边距保持不动，
+# 于是「放大字号」= 每行字数变少、页数变多，版面比例和设计不变。
+# 封面与卷扉页例外：它们是按 21×29.7cm 画布排死的设计稿（书名 26–34pt 压在金色分隔线
+# 上方），跟着放大就会书名折行、压线，所以这两块的尺寸始终按 100% 出。
+_PT = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)pt")
+_RULE = re.compile(r"([^{}]*)\{([^{}]*)\}")
+_NO_SCALE = (".cover", ".volh")   # 选择器里带这些字样的规则不缩放
+
+
+def _scale_pt(css_text: str, scale: float) -> str:
+    if abs(scale - 1.0) < 1e-6:
+        return css_text
+
+    def one(m: re.Match) -> str:
+        head, body = m.group(1), m.group(2)
+        if any(tok in head for tok in _NO_SCALE):
+            return m.group(0)
+        scaled = _PT.sub(lambda mm: "%gpt" % round(float(mm.group(1)) * scale, 2), body)
+        return head + "{" + scaled + "}"
+
+    return _RULE.sub(one, css_text)
+
+
+@lru_cache(maxsize=8)
+def css_for(scale: float = 1.0) -> str:
+    """按倍率缩放后的整份 CSS（1.0 原样返回，不产生额外开销）。"""
+    return _scale_pt(CSS, scale)
+
+
+def clamp_scale(scale: float | None) -> float:
+    """只接受 1.0 / 1.15 / 1.3 三档，别的一律回落到 1.0。"""
+    try:
+        v = round(float(scale or 1.0), 2)
+    except (TypeError, ValueError):
+        return 1.0
+    return v if v in (1.0, 1.15, 1.3) else 1.0
+
 
 
 def esc(s: str) -> str:
@@ -391,13 +431,14 @@ def _vol_meta(vol: dict) -> str:
 def build_volume_html(plan: Plan, books: list[dict], index: int,
                       page_map: dict[int, int] | None = None,
                       show_pages: bool = True,
-                      covers: dict[int, tuple[str | None, str]] | None = None
+                      covers: dict[int, tuple[str | None, str]] | None = None,
+                      font_scale: float = 1.0
                       ) -> tuple[str, list[dict]]:
     vol = books[index]
     _n, chars = book_stats(vol)
     entries: list[dict] = []
     body = _volume_body_html(plan, vol, entries, volume_heading=False)
-    doc = [HEAD % (esc(vol["title"]), CSS)]
+    doc = [HEAD % (esc(vol["title"]), css_for(font_scale))]
     subtitle = _vol_meta(vol)
     if subtitle == vol["title"]:      # 单节卷：副标题与书名相同就不重复印
         subtitle = ""
@@ -414,7 +455,8 @@ def build_volume_html(plan: Plan, books: list[dict], index: int,
 
 def build_toc_html(plan: Plan, books: list[dict],
                    page_map: dict[int, int] | None = None,
-                   show_pages: bool = True) -> tuple[str, list[dict]]:
+                   show_pages: bool = True,
+                   font_scale: float = 1.0) -> tuple[str, list[dict]]:
     """00_总目录与说明：全书概览 + 每卷篇目。"""
     entries: list[dict] = []
     total_stories = sum(book_stats(b)[0] for b in books)
@@ -438,7 +480,8 @@ def build_toc_html(plan: Plan, books: list[dict],
     extra = ("<style>.tocvol{font-family:'黑体',SimHei,sans-serif;font-weight:bold;font-size:13pt;"
              "margin:12pt 0 3pt}.tocmeta{font-size:9pt;color:#999;margin-bottom:5pt}"
              ".tocstory{font-size:9.5pt;margin:0.4pt 0 0.4pt 0.9cm}</style>")
-    doc = [HEAD % (esc(plan.title + " · 总目录与说明"), CSS + extra)]
+    doc = [HEAD % (esc(plan.title + " · 总目录与说明"),
+                   css_for(font_scale) + _scale_pt(extra, font_scale))]
     doc.append(head)
     doc.append('<div style="page-break-before:always"></div>')
     doc.append('<h2 style="font-family:\'黑体\',SimHei,sans-serif;font-size:18pt;'
@@ -452,7 +495,8 @@ def build_toc_html(plan: Plan, books: list[dict],
 def build_combined_html(plan: Plan, books: list[dict],
                         page_map: dict[int, int] | None = None,
                         show_pages: bool = True,
-                        covers: dict[int, tuple[str | None, str]] | None = None
+                        covers: dict[int, tuple[str | None, str]] | None = None,
+                        font_scale: float = 1.0
                         ) -> tuple[str, list[dict]]:
     total_stories = sum(book_stats(b)[0] for b in books)
     total_chars = sum(book_stats(b)[1] for b in books)
@@ -460,7 +504,7 @@ def build_combined_html(plan: Plan, books: list[dict],
     body = []
     for vol in books:
         body.append(_volume_body_html(plan, vol, entries, volume_heading=True))
-    doc = [HEAD % (esc(plan.title + " · 全一册"), CSS)]
+    doc = [HEAD % (esc(plan.title + " · 全一册"), css_for(font_scale))]
     doc.append(_cover_html(plan, "全一册",
                            "共 %d 卷 · %d 篇 · 约 %d 万字" % (
                                len(books), total_stories, round(total_chars / 10000)),
@@ -696,12 +740,17 @@ def _make_pdf_once(builder, out_path: str, browser: str, work: str, title: str,
 
 def export_pdfs_html(plan: Plan, books: list[dict], selection: list[int], pdf_dir: str,
                      combined: bool = True, combined_name: str = "全一册",
-                     with_toc_page: bool = True, progress=None) -> dict[str, int]:
+                     with_toc_page: bool = True, progress=None,
+                     font_scale: float = 1.0) -> dict[str, int]:
     """用 Chromium 把结构化数据直接排版成 PDF。返回 {文件名主体: 页数}。
+
+    font_scale 只缩放字号（pt），A4 版心不变：选 130% 会让每行字数变少、页数变多。
+    产物写进 pdf_dir 并覆盖同名文件——同一套书不要指望两档字号并存。
 
     progress(frac, label, done, total)：frac 是整段 PDF 工序的完成比例（0–1），
     label 是当前在做的文件/步骤，done/total 是已完成/总共的文件数。
     """
+    scale = clamp_scale(font_scale)
     browser = find_chromium()
     if not browser:
         raise RuntimeError(
@@ -709,6 +758,9 @@ def export_pdfs_html(plan: Plan, books: list[dict], selection: list[int], pdf_di
             "PRTS_CHROME=/path/to/chrome。")
     ensure_dir(pdf_dir)
     print("  PDF 引擎：Chromium（%s）" % os.path.basename(browser))
+    if abs(scale - 1.0) > 1e-6:
+        print("  正文字号：%d%%（A4 版心不变，每行字数减少、页数相应增加）"
+              % round(scale * 100))
     from .images import cover_art
 
     covers = {i: cover_art(plan, book, i) for i, book in enumerate(books)}
@@ -741,19 +793,21 @@ def export_pdfs_html(plan: Plan, books: list[dict], selection: list[int], pdf_di
             on_stage = reporter(k, name)
             if kind == "toc":
                 pages, _n = _make_pdf_once(
-                    lambda pm, sp: build_toc_html(plan, books, pm, sp),
+                    lambda pm, sp: build_toc_html(plan, books, pm, sp, font_scale=scale),
                     os.path.join(pdf_dir, name + ".pdf"), browser, work,
                     plan.title + " · 总目录与说明", on_stage=on_stage)
                 print("  %-42s %4d 页（全书概览）" % (name, pages))
             elif kind == "vol":
                 pages, n = _make_pdf(
-                    plan, lambda pm, sp, i=index: build_volume_html(plan, books, i, pm, sp, covers),
+                    plan, lambda pm, sp, i=index: build_volume_html(
+                        plan, books, i, pm, sp, covers, font_scale=scale),
                     os.path.join(pdf_dir, name + ".pdf"), browser, work,
                     books[index]["title"], on_stage=on_stage)
                 print("  %-42s %4d 页（%d 条目录）" % (name, pages, n))
             else:
                 pages, n = _make_pdf(
-                    plan, lambda pm, sp: build_combined_html(plan, books, pm, sp, covers),
+                    plan, lambda pm, sp: build_combined_html(
+                        plan, books, pm, sp, covers, font_scale=scale),
                     os.path.join(pdf_dir, name + ".pdf"), browser, work,
                     plan.title + " · 全一册", on_stage=on_stage)
                 print("  %-42s %4d 页（%d 条目录）" % (name, pages, n))

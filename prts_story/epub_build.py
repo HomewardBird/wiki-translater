@@ -9,7 +9,8 @@ import zipfile
 
 from .config import Plan, author_name, ensure_dir, safe_filename
 from .images import cached_portrait, cover_art
-from .style import color_index, crumb_redundant, cue_parts, is_beat, story_colors
+from .style import (SPEAKER_COLORS, color_index, crumb_redundant, cue_parts, is_beat,
+                    story_colors)
 
 CSS = """@charset "utf-8";
 body { font-family: "Songti SC", "SimSun", serif; line-height: 1.65; margin: 0 1.2em;
@@ -18,23 +19,30 @@ h2 { font-family: "Heiti SC", "SimHei", sans-serif; font-size: 1.6em; text-align
      margin: 0.4em 0 0.3em; letter-spacing: 0.04em; }
 h3 { font-family: "Heiti SC", "SimHei", sans-serif; font-size: 1em; color: #4a4a4a;
      text-align: center; margin: 1.6em 0 0.8em; letter-spacing: 0.08em; }
-p.crumb { font-family: "Heiti SC", "SimHei", sans-serif; font-size: 0.78em; color: #8c8c8c;
+p.crumb { font-family: "Heiti SC", "SimHei", sans-serif; font-size: 0.78em !important;
+          color: #8c8c8c !important;
           letter-spacing: 0.16em; text-align: center; margin: 1.4em 0 0.6em; text-indent: 0; }
 hr.rule { width: 26%; margin: 0.2em auto 1.8em; border: 0; border-top: 1px solid #d8d8d8; }
 p.dlg { margin: 0 0 0.18em; text-indent: 0; }
 p.dlg.chg { margin-top: 0.5em; }
 p.dlg.beat { margin-top: 0.8em; margin-bottom: 0.35em; }
 p.dlg .s { font-family: "Heiti SC", "SimHei", sans-serif; }
-p.nar { margin: 0.5em 0; text-indent: 2em; color: #333333; }
-p.cues { margin: 0.8em 0; text-align: center; text-indent: 0; }
-p.cues .cue { display: block; font-size: 0.8em; letter-spacing: 0.06em; color: #8a8a8a; }
-p.cues .cl { color: #b3b3b3; }
-p.opt { margin: 0.6em 0; font-size: 0.86em; color: #6b6b6b; text-indent: 2em; }
+p.nar { margin: 0.5em 0; text-indent: 2em; color: #333333 !important; }
+/* 演出提示：一行一条，块级 p（比 span+display:block 兼容性好），字号压小、居中、浅灰。
+   颜色与字号在标签上另外写了内联 style，因为不少阅读器会忽略出版方样式表。 */
+p.cue, p.cues { margin: 0.5em 0 0.3em; text-align: center; text-indent: 0;
+        font-family: "Heiti SC", "SimHei", sans-serif; font-size: 0.72em !important;
+        line-height: 1.5; letter-spacing: 0.1em; color: #8a8a8a !important; }
+p.cue .cl, span.cl { color: #b3b3b3 !important; }
+p.cue .cv, span.cv { color: #8a8a8a !important; }
+p.opt { margin: 0.6em 0; font-size: 0.86em !important; color: #6b6b6b !important; text-indent: 2em; }
 p.portrait { text-align: center; margin: 0.3em 0 1em; text-indent: 0; }
 p.portrait img { width: 34%; max-width: 150px; height: auto; }
 p.tp { text-align: center; }
-.c1 { color: #8a4b41; } .c2 { color: #3a5680; } .c3 { color: #77602b; } .c4 { color: #3b6355; }
-.c5 { color: #6a4b78; } .c6 { color: #7c5533; } .c7 { color: #2f6669; } .c8 { color: #4b4b55; }
+.c1 { color: #8a4b41 !important; } .c2 { color: #3a5680 !important; }
+.c3 { color: #77602b !important; } .c4 { color: #3b6355 !important; }
+.c5 { color: #6a4b78 !important; } .c6 { color: #7c5533 !important; }
+.c7 { color: #2f6669 !important; } .c8 { color: #4b4b55 !important; }
 /* 封面页：深色底、居中立绘、书名在下 */
 .epubcover { background: #0d0f14; color: #ffffff; min-height: 92vh; margin: -0.6em -1.2em 0;
              padding: 2.2em 1.2em 2em; text-align: center; }
@@ -76,15 +84,26 @@ def _story_xhtml(story: dict, crumb: str | None, portrait_href: str | None = Non
 
 
 def _cue_line(text: str) -> str:
+    """一条演出提示渲染成独立的 `<p class="cue">`。
+
+    内联 style 是刻意的：颜色与字号都写在标签上，阅读器即使丢掉 style.css 也还能看出
+    「这是提示、且比台词小」；类名保留给支持样式表的阅读器用。
+    """
     c = cue_parts(text)
     if not c:
         return ""
     if c["kind"] == "other":
-        return '<span class="cue cv">%s</span>' % xesc(c["value"])
-    if c["value"]:
-        return ('<span class="cue"><span class="cl">%s</span> · '
-                '<span class="cv">%s</span></span>' % (xesc(c["label"]), xesc(c["value"])))
-    return '<span class="cue cl">%s</span>' % xesc(c["label"])
+        inner = xesc(c["value"])
+    elif c["value"]:
+        inner = ('<span class="cl" style="color:#b3b3b3 !important">%s</span> · '
+                 '<span class="cv" style="color:#8a8a8a !important">%s</span>'
+                 % (xesc(c["label"]), xesc(c["value"])))
+    else:
+        inner = ('<span class="cl" style="color:#b3b3b3 !important">%s</span>'
+                 % xesc(c["label"]))
+    return ('<p class="cue" style="text-align:center;font-size:0.72em !important;'
+            'color:#8a8a8a !important">'
+            "%s</p>\n" % inner)
 
 
 def _blocks_xhtml(blocks: list[dict]) -> str:
@@ -101,14 +120,9 @@ def _blocks_xhtml(blocks: list[dict]) -> str:
         b = blocks[i]
         kind = b["k"]
         if kind == "q":
-            lines = []
             while i < len(blocks) and blocks[i]["k"] == "q":
-                one = _cue_line(blocks[i].get("t") or "")
-                if one:
-                    lines.append(one)
+                parts.append(_cue_line(blocks[i].get("t") or ""))
                 i += 1
-            if lines:
-                parts.append('<p class="cues">%s</p>\n' % "".join(lines))
             prev_speaker = None
             continue
         if kind == "h4":
@@ -121,8 +135,10 @@ def _blocks_xhtml(blocks: list[dict]) -> str:
                 cls.append("chg")
             if is_beat(text):
                 cls.append("beat")
-            parts.append('<p class="%s"><span class="s c%d">%s：</span>%s</p>\n'
-                         % (" ".join(cls), color_index(name, colors), xesc(name), xesc(text)))
+            idx = color_index(name, colors)
+            hexc = SPEAKER_COLORS[(idx - 1) % len(SPEAKER_COLORS)]
+            parts.append('<p class="%s"><span class="s c%d" style="color:#%s !important">%s：</span>%s</p>\n'
+                         % (" ".join(cls), idx, hexc, xesc(name), xesc(text)))
             prev_speaker = name
         elif kind == "n":
             parts.append('<p class="nar">%s</p>\n' % xesc(b["t"]))

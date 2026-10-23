@@ -16,6 +16,7 @@
     selected: new Map(),     // title -> entry
     plan: null,
     formats: new Set(["pdf"]),
+    fontScale: parseFloat(localStorage.getItem("wt.fontScale") || "1") || 1,  // PDF 正文字号倍率
     coverMode: "",           // auto 抓取 / local 用自己的图片 / off 只用占位图
     coverPicked: false,
     job: null,
@@ -645,10 +646,41 @@
           else state.formats.add(key);
           if (!state.formats.size) state.formats.add("pdf");
           ev.currentTarget.classList.toggle("on", state.formats.has(key));
+          if (typeof syncScale === "function") syncScale();
         },
       }, label, el("small", { text: sub })));
     }
     body.append(fmts);
+
+    // PDF 字号：平板横屏双页时 A4 页面被缩到半个屏宽，字会偏小，这里让用户自己放大。
+    // 只缩放字号，版心与页边距不变，所以页数会增加。
+    body.append(el("h4", { text: "PDF 正文字号" }));
+    const scales = el("div", { class: "formats" });
+    const scaleHint = el("p", { class: "hint", text: "" });
+    const scaleDefs = [[1, "100%", "打印原尺寸"], [1.15, "115%", "略大"], [1.3, "130%", "平板双页"]];
+    const syncScale = () => {
+      for (const b of scales.children) {
+        b.classList.toggle("on", parseFloat(b.dataset.scale) === state.fontScale);
+      }
+      scales.style.opacity = state.formats.has("pdf") ? "1" : "0.45";
+      scales.style.pointerEvents = state.formats.has("pdf") ? "" : "none";
+      scaleHint.textContent = state.formats.has("pdf")
+        ? "只影响 PDF；调大后每行字数变少、页数增加，会覆盖上一次生成的 PDF。"
+        : "没选 PDF 时不生效。";
+    };
+    for (const [val, label, sub] of scaleDefs) {
+      scales.append(el("button", {
+        class: "fmt",
+        dataset: { scale: String(val) },
+        onclick: () => {
+          state.fontScale = val;
+          localStorage.setItem("wt.fontScale", String(val));
+          syncScale();
+        },
+      }, label, el("small", { text: sub })));
+    }
+    body.append(scales, scaleHint);
+    syncScale();
 
     body.append(el("h4", { text: "封面" }));
     const coverInfo = plan.cover || {};
@@ -750,6 +782,7 @@
         plan_id: state.plan.id,
         title: wanted,
         formats: Array.from(state.formats),
+        font_scale: state.fontScale,
       });
       followJob(job, {
         onUpdate: (snap) => {

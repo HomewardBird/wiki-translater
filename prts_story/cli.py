@@ -173,14 +173,14 @@ def pick_engine(engine: str) -> str:
 
 
 def make_pdfs_html(plan: Plan, books: list[dict], selection: list[int],
-                   combined: bool) -> dict:
+                   combined: bool, font_scale: float = 1.0) -> dict:
     from .pdf_html import export_pdfs_html
 
     pdf_dir = ensure_dir(plan.out_dir("pdf"))
     print("导出 PDF → %s" % pdf_dir)
     started = time.time()
     pages = export_pdfs_html(plan, books, selection, pdf_dir, combined=combined,
-                             combined_name=COMBINED_NAME)
+                             combined_name=COMBINED_NAME, font_scale=font_scale)
     print("  PDF 完成，合计 %d 页（用时 %.1fs）" % (sum(pages.values()), time.time() - started))
     return pages
 
@@ -227,7 +227,8 @@ def cmd_pdf(plan: Plan, args) -> int:
     engine = pick_engine(getattr(args, "engine", "auto"))
 
     if engine == "chrome":
-        pages = make_pdfs_html(plan, books, selection, combined)
+        pages = make_pdfs_html(plan, books, selection, combined,
+                               font_scale=getattr(args, "font_scale", 1.0))
     else:
         paths = expected_docx(plan, books, selection, combined)
         if not args.rebuild and all(os.path.isfile(p) for p in paths):
@@ -291,6 +292,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="PDF 引擎：auto 优先 Chromium，其次 Word / LibreOffice")
     d.add_argument("--write-back", action="store_true",
                    help="把更新后的目录页码回存进 .docx（默认不回存；个别环境可能卡住）")
+    d.add_argument("--font-scale", type=float, choices=(1.0, 1.15, 1.3), default=1.0,
+                   help="PDF 正文字号倍率：1.0 / 1.15 / 1.3（平板横屏双页看不清时调大）")
     d.set_defaults(func=cmd_pdf)
     a = sub.add_parser("all", parents=[common], help="抓取 → Word/EPUB → PDF 一条龙")
     a.add_argument("--delay", type=float, default=0.35, help="每页间隔秒数（默认 0.35）")
@@ -298,6 +301,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="PDF 引擎：auto 优先 Chromium，其次 Word / LibreOffice")
     a.add_argument("--write-back", action="store_true",
                    help="把更新后的目录页码回存进 .docx（默认不回存）")
+    a.add_argument("--font-scale", type=float, choices=(1.0, 1.15, 1.3), default=1.0,
+                   help="PDF 正文字号倍率：1.0 / 1.15 / 1.3")
     a.set_defaults(func=cmd_all)
 
     g = sub.add_parser("gui", help="打开图形界面（不带参数运行时默认走这里）")

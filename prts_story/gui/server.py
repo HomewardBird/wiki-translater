@@ -809,6 +809,10 @@ class Handler(BaseHTTPRequestHandler):
         formats = [f for f in (body.get("formats") or ["pdf"]) if f in ("pdf", "docx", "epub")]
         if not formats:
             formats = ["pdf"]
+        # PDF 正文字号倍率：只有 100% / 115% / 130% 三档，别的值一律回落到 100%
+        from ..pdf_html import clamp_scale
+
+        font_scale = clamp_scale(body.get("font_scale"))
         plan = Plan(self.app.root, plan_id)
         wanted = str(body.get("title") or "").strip()
         if wanted and wanted != plan.title:
@@ -824,17 +828,18 @@ class Handler(BaseHTTPRequestHandler):
         if not self.app._build_lock.acquire(blocking=False):
             raise ValueError("已经有一个生成任务在跑，等它结束再试")
         try:
-            job = self.app.start_job("build", plan.title, lambda j: self._run_build(j, plan, formats))
+            job = self.app.start_job("build", plan.title,
+                                     lambda j: self._run_build(j, plan, formats, font_scale))
         except Exception:
             self.app._build_lock.release()
             raise
         return self._json({"ok": True, "job": job.id})
 
-    def _run_build(self, job: Job, plan: Plan, formats: list[str]) -> dict:
+    def _run_build(self, job: Job, plan: Plan, formats: list[str], font_scale: float = 1.0) -> dict:
         sink = contextlib.redirect_stdout(_LogSink(job))
         try:
             with sink:
-                return self._build_inner(job, plan, formats)
+                return self._build_inner(job, plan, formats, font_scale)
         finally:
             self.app._build_lock.release()
 
@@ -845,7 +850,8 @@ class Handler(BaseHTTPRequestHandler):
     P_PDF = (0.76, 0.965)
     P_FINAL = (0.965, 0.995)
 
-    def _build_inner(self, job: Job, plan: Plan, formats: list[str]) -> dict:
+    def _build_inner(self, job: Job, plan: Plan, formats: list[str],
+                     font_scale: float = 1.0) -> dict:
         source = get_source(plan.source_id)
         titles = plan.pages()
         n = len(titles)
@@ -921,6 +927,7 @@ class Handler(BaseHTTPRequestHandler):
             pdf_dir = ensure_dir(plan.out_dir("pdf"))
             pages = export_pdfs_html(
                 plan, books, selection, pdf_dir, combined=True, combined_name=COMBINED_NAME,
+                font_scale=font_scale,
                 progress=lambda frac, label, d=None, t=None: job.emit(
                     label, lo + (hi - lo) * frac, phase="渲染 PDF",
                     done=d, total=t))
