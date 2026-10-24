@@ -183,9 +183,10 @@ def add_cover(doc, plan: Plan, title: str, subtitle: str, meta_lines: list[str],
         para(doc, "", size=11, space_before=26)
     for line in meta_lines:
         para(doc, line, SONG, 10, False, "999999", align=WD_ALIGN_PARAGRAPH.CENTER)
-    p = para(doc, "安巢鸟 · 整理", HEI, 9, False, "A8A29A",
-             align=WD_ALIGN_PARAGRAPH.CENTER, space_before=16)
-    _letter_spacing(p, 0.28, 9)
+    if plan.credit:
+        p = para(doc, author_name(plan), HEI, 9, False, "A8A29A",
+                 align=WD_ALIGN_PARAGRAPH.CENTER, space_before=16)
+        _letter_spacing(p, 0.28, 9)
     doc.add_page_break()
 
 
@@ -438,7 +439,7 @@ def build_volume_docx(plan: Plan, books: list[dict], index: int, out_dir: str) -
     _, chars = book_stats(vol)
     doc = setup_doc()
     doc.core_properties.title = vol["title"]
-    doc.core_properties.author = author_name()
+    doc.core_properties.author = author_name(plan) or None
     doc.core_properties.comments = (
         "文字稿由 %s 的剧情页清洗生成；演出指令仅保留场景/画面/音乐提示，删去时间轴与特效参数。"
         % source_short(plan)
@@ -464,7 +465,7 @@ def build_toc_docx(plan: Plan, books: list[dict], out_dir: str) -> str:
     """00_总目录与说明.docx：全书概览 + 每卷篇目。"""
     doc = setup_doc()
     doc.core_properties.title = plan.title + " · 总目录与说明"
-    doc.core_properties.author = author_name()
+    doc.core_properties.author = author_name(plan) or None
 
     total_stories = 0
     total_chars = 0
@@ -527,7 +528,7 @@ def build_combined_docx(plan: Plan, books: list[dict], out_dir: str,
 
     doc = setup_doc()
     doc.core_properties.title = plan.title + " · 全一册"
-    doc.core_properties.author = author_name()
+    doc.core_properties.author = author_name(plan) or None
     doc.core_properties.comments = (
         "文字稿由 %s 的剧情页清洗生成；演出指令仅保留场景/画面/音乐提示，删去时间轴与特效参数。"
         % source_short(plan)

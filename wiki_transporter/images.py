@@ -351,7 +351,7 @@ def art_svg(accent: str, width: int = 900, height: int = 1200) -> str:
     渐变与光晕都用大量色带/同心椭圆叠出来，不用 <linearGradient>——
     PyMuPDF 与部分 EPUB 阅读器对内联渐变支持不一致，色带处处都渲染得对。
     """
-    top, mid, bottom = _mix(accent, 0.34), _mix(accent, 0.62), "#07080b"
+    top, mid, bottom = _mix(accent, 0.62), _mix(accent, 0.84), "#07080b"
     c_top, c_mid, c_bottom = _hex(top), _hex(mid), _hex(bottom)
     bands = []
     n = 56
@@ -375,20 +375,26 @@ def art_svg(accent: str, width: int = 900, height: int = 1200) -> str:
         glow.append('<ellipse cx="%d" cy="%d" rx="%d" ry="%d" fill="#%02x%02x%02x" '
                     'opacity="%.3f"/>' % (int(width * 0.66), int(height * 0.24),
                                           rx, ry, *c_accent, 0.026))
+    # 装饰只画抽象纹样：同心圆环 + 菱形印，不再画人形剪影（剪影撑不起封面）
+    cx, cy = int(width * 0.68), int(height * 0.30)
+    motif = []
+    for r, op in ((0.42, 0.20), (0.34, 0.16), (0.26, 0.13), (0.18, 0.10)):
+        motif.append('<circle cx="%d" cy="%d" r="%d" fill="none" stroke="#%02x%02x%02x" '
+                     'stroke-width="1.5" opacity="%.2f"/>'
+                     % (cx, cy, int(width * r), *c_accent, op))
+    d = int(width * 0.115)
+    motif.append('<rect x="%d" y="%d" width="%d" height="%d" '
+                 'transform="rotate(45 %d %d)" fill="none" stroke="#%02x%02x%02x" '
+                 'stroke-width="1.6" opacity="0.26"/>'
+                 % (cx - d // 2, cy - d // 2, d, d, cx, cy, *c_accent))
     return ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
-            'viewBox="0 0 %d %d">%s%s'
-            '<g fill="#05070a" opacity="0.58">'
-            '<ellipse cx="450" cy="474" rx="112" ry="128"/>'
-            '<path d="M176 1200 C182 826 276 704 450 694 C624 704 718 826 724 1200 Z"/></g>'
-            '<g fill="#%02x%02x%02x" opacity="0.55">'
-            '<path d="M570 352 C662 470 656 634 568 694 C612 552 602 446 542 380 Z"/>'
-            '<path d="M340 362 C292 470 300 554 330 636 C278 554 284 446 326 352 Z"/></g>'
+            'viewBox="0 0 %d %d">%s%s%s'
             '<g stroke="#%02x%02x%02x" stroke-width="1.6" opacity="0.30">'
             '<path d="M0 1030 H900"/><path d="M0 1048 H620"/><path d="M0 1066 H392"/></g>'
             '<rect x="0" y="0" width="8" height="%d" fill="#%02x%02x%02x" opacity="0.75"/>'
             '</svg>'
             % (width, height, width, height, "".join(bands), "".join(glow),
-               *c_accent, *c_accent, height, *c_accent))
+               "".join(motif), *c_accent, height, *c_accent))
 
 
 def fallback_art(plan: Plan) -> str | None:
@@ -500,9 +506,11 @@ def cover_art(plan: Plan, book: dict, index: int = 0) -> tuple[str | None, str]:
         return path, ("bleed" if has_alpha(path) else "framed")
     if not cover_fetch_enabled(plan):
         path = fallback_art(plan)
-        return (path, "framed") if path else (None, "plain")
+        # 占位图本身是满版渐变，当 bleed 用才好看；塞进画框只是一个色块
+        return (path, "bleed") if path else (None, "plain")
     path = fetch_book_hero(plan, book)
     if not path:
         path = fallback_art(plan)
-        return (path, "framed") if path else (None, "plain")
+        # 占位图本身是满版渐变，当 bleed 用才好看；塞进画框只是一个色块
+        return (path, "bleed") if path else (None, "plain")
     return path, ("bleed" if has_alpha(path) else "framed")

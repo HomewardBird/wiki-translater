@@ -138,6 +138,12 @@ def score_entry(query_norm: str, entry: Entry) -> float:
         coverage = _subsequence_ratio(query_norm, cand)
         if coverage >= 0.75:
             best = max(best, (150 + 60 * coverage) * weight)
+            continue
+        # 形近/音近的错字容错：「特蕾西娅」↔「特蕾西亚」。只比等长的相邻片段，
+        # 长标题（「XX/干员密录/1」）才不会把相似度摊薄。
+        ratio = _window_ratio(query_norm, cand)
+        if ratio >= 0.62:
+            best = max(best, (170 + 130 * ratio) * weight)
         else:
             ratio = _ratio(query_norm, cand)
             if ratio >= 0.55:
@@ -155,6 +161,26 @@ def _subsequence_ratio(q: str, c: str) -> float:
         if i < len(q) and ch == q[i]:
             i += 1
     return i / len(q)
+
+
+def _window_ratio(q: str, c: str) -> float:
+    """候选里每段等长片段都跟查询比一次，取最高相似度。"""
+    n = len(q)
+    if n < 2 or len(c) < n:
+        return 0.0
+    need = max(2, int(n * 0.6 + 0.5))     # 先按「有几个字真出现在候选里」筛一遍，省掉无谓比较
+    if sum(1 for ch in set(q) if ch in c) < need:
+        return 0.0
+    from difflib import SequenceMatcher
+
+    best = 0.0
+    for i in range(len(c) - n + 1):
+        r = SequenceMatcher(None, q, c[i:i + n]).ratio()
+        if r > best:
+            best = r
+            if best >= 0.95:
+                break
+    return best
 
 
 def _ratio(a: str, b: str) -> float:

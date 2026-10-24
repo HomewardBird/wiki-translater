@@ -43,16 +43,7 @@ p.tp { text-align: center; }
 .c3 { color: #77602b !important; } .c4 { color: #3b6355 !important; }
 .c5 { color: #6a4b78 !important; } .c6 { color: #7c5533 !important; }
 .c7 { color: #2f6669 !important; } .c8 { color: #4b4b55 !important; }
-/* 封面页：深色底、居中立绘、书名在下 */
-.epubcover { background: #0d0f14; color: #ffffff; min-height: 92vh; margin: -0.6em -1.2em 0;
-             padding: 2.2em 1.2em 2em; text-align: center; }
-.epubcover .coverart { margin: 0 auto 0.9em; }
-.epubcover .coverart img { width: 90%; max-width: 380px; height: auto; }
-.epubcover h1 { font-family: "Songti SC", "SimSun", serif; font-size: 1.75em;
-                letter-spacing: 0.08em; margin: 0.9em 0 0.4em; color: #f4efe6; }
-.epubcover .csub { color: #b9b3a6; font-size: 0.86em; letter-spacing: 0.08em; margin: 0.2em 0 0; }
-.epubcover .cbrand { color: #c8a462; font-size: 0.72em; letter-spacing: 0.3em;
-                     margin-top: 1.6em; text-indent: 0; }
+/* 封面页的版式写在 ch001.xhtml 的内联样式里（内联 + !important 才压得过阅读器主题） */
 """
 
 XHTML_HEAD = (
@@ -159,7 +150,8 @@ def _fanli_xhtml(plan: Plan) -> str:
 
 
 def _write_epub(path: str, book_id: str, title: str, chapters: list[tuple[str, str, str]],
-                nav_tree: list[dict], images: dict[str, bytes] | None = None) -> None:
+                nav_tree: list[dict], images: dict[str, bytes] | None = None,
+                credit: str = "") -> None:
     """chapters: [(filename, title, xhtml)]；nav_tree: [{title, href?, children?}]"""
     images = images or {}
     nav = ['<?xml version="1.0" encoding="utf-8"?>', "<!DOCTYPE html>",
@@ -221,7 +213,7 @@ def _write_epub(path: str, book_id: str, title: str, chapters: list[tuple[str, s
            '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">',
            '<dc:identifier id="bookid">%s</dc:identifier>' % book_id,
            "<dc:title>%s</dc:title>" % xesc(title),
-           "<dc:creator>%s</dc:creator>" % xesc(author_name()),
+           ("<dc:creator>%s</dc:creator>" % xesc(credit)) if credit else "",
            "<dc:language>zh-CN</dc:language>",
            "<dc:description>%s；演出指令仅保留场景/画面/音乐提示。</dc:description>"
            % xesc(title),
@@ -277,16 +269,53 @@ def _hero_href(plan: Plan, book: dict, images: dict[str, bytes], index: int = 0)
     return href
 
 
-def _cover_xhtml(title: str, subtitle: str, hero: str | None) -> str:
-    art = ('<div class="coverart"><img src="%s" alt=""/></div>' % hero) if hero else ""
-    sub = '<p class="csub">%s</p>' % subtitle if subtitle else ""
-    return ('<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html>'
-            '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">'
-            '<head><meta charset="utf-8"/><title>封面</title>'
-            '<link rel="stylesheet" type="text/css" href="style.css"/></head>'
-            '<body><div class="epubcover">%s<h1>%s</h1>%s'
-            '<p class="cbrand">安巢鸟 · 整理</p></div></body></html>'
-            % (art, title, sub))
+def _imp(style: str) -> str:
+    """内联样式逐条加 !important：阅读器自带的作者样式压不过它。"""
+    return ";".join(p.strip() + " !important" for p in style.split(";") if p.strip())
+
+
+def _cover_xhtml(title: str, subtitle: str, hero: str | None, credit: str = "") -> str:
+    """封面：和 PDF 同一套版式 —— 深色满版、立绘贴右、书名压左下。
+
+    版式全部写成内联样式（带 !important）：阅读器不加载 style.css 也不会走样。
+    """
+    art = ('<img src="%s" alt="" style="%s"/>' % (hero, _imp(
+        "position:absolute;top:0;left:50%;height:100%;width:auto;max-width:none;"
+        "transform:translateX(-50%)"))) if hero else ""
+    sub = ('<p style="%s">%s</p>' % (_imp(
+        "margin:.75em 0 0;color:#b9b3a6;font-size:.82em;letter-spacing:.1em;text-indent:0"),
+        xesc(subtitle))) if subtitle else ""
+    return (
+        '<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html>'
+        '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">'
+        '<head><meta charset="utf-8"/><title>封面</title>'
+        '<link rel="stylesheet" type="text/css" href="style.css"/></head>'
+        '<body style="%s">' % _imp("margin:0;padding:0;background:#0b0d12") +
+        '<div style="%s">' % _imp(
+            "position:relative;min-height:100vh;box-sizing:border-box;"
+            "padding:2.4em 1.4em 2.2em;overflow:hidden;color:#ffffff;"
+            "background:radial-gradient(125% 95% at 76% 22%,#1e2532 0%,#12151c 46%,#090b0f 100%);"
+            "display:flex;flex-direction:column;justify-content:flex-end;text-align:left") +
+        art +
+        '<div style="%s"></div>' % _imp(
+            "position:absolute;top:0;right:0;bottom:0;left:0;background:"
+            "linear-gradient(0deg,rgba(9,10,13,.97) 0%,rgba(9,10,13,.90) 14%,"
+            "rgba(9,10,13,.55) 30%,rgba(9,10,13,.12) 50%,rgba(9,10,13,0) 66%),"
+            "rgba(9,10,13,.20)") +
+        '<div style="%s">' % _imp("position:relative;max-width:76%;z-index:2") +
+        '<div style="%s">PRTS · 明日方舟</div>' % _imp(
+            "color:#c8a462;font-size:.72em;letter-spacing:.42em") +
+        '<h1 style="%s">%s</h1>' % (_imp(
+            "font-family:'Songti SC','SimSun',serif;font-size:1.8em;line-height:1.32;"
+            "letter-spacing:.05em;color:#f4efe6;margin:.55em 0 0;font-weight:bold"), xesc(title)) +
+        '<div style="%s"></div>' % _imp(
+            "width:2.4em;height:2px;background:#c8a462;margin:.9em 0 1em") +
+        sub +
+        (('<div style="%s">%s</div>' % (_imp(
+            "color:#c8a462;font-size:.7em;letter-spacing:.28em"), xesc(credit)))
+         if credit else '') +
+        '</div></div></body></html>'
+    )
 
 
 def _portrait_href(plan: Plan, sec: dict, images: dict[str, bytes]) -> str | None:
@@ -312,7 +341,7 @@ def build_volume_epub(plan: Plan, books: list[dict], index: int, out_dir: str) -
     images: dict[str, bytes] = {}
     hero = _hero_href(plan, book, images, index) or _hero_href(plan, books[0], images, 0)
     chapters: list[tuple[str, str, str]] = [
-        ("ch001.xhtml", "封面", _cover_xhtml(book["title"], "", hero)),
+        ("ch001.xhtml", "封面", _cover_xhtml(book["title"], "", hero, author_name(plan))),
         ("ch002.xhtml", "凡例", _fanli_xhtml(plan)),
     ]
     nav_tree: list[dict] = [{"title": "凡例", "href": "ch002.xhtml"}]
@@ -328,7 +357,8 @@ def build_volume_epub(plan: Plan, books: list[dict], index: int, out_dir: str) -
 
     path = os.path.join(out_dir, "%02d_%s.epub" % (
         index + 1, safe_filename(book["title"].replace("　", "_"))))
-    _write_epub(path, _book_id(plan, book["title"]), book["title"], chapters, nav_tree, images)
+    _write_epub(path, _book_id(plan, book["title"]), book["title"], chapters, nav_tree, images,
+                credit=author_name(plan))
     return path
 
 
@@ -338,7 +368,7 @@ def build_combined_epub(plan: Plan, books: list[dict], out_dir: str,
     images: dict[str, bytes] = {}
     hero = _hero_href(plan, books[0], images) if books else None
     chapters: list[tuple[str, str, str]] = [
-        ("ch001.xhtml", "封面", _cover_xhtml(title, "", hero)),
+        ("ch001.xhtml", "封面", _cover_xhtml(title, "", hero, author_name(plan))),
         ("ch002.xhtml", "凡例", _fanli_xhtml(plan)),
     ]
     nav_tree: list[dict] = [{"title": "凡例", "href": "ch002.xhtml"}]
@@ -361,5 +391,6 @@ def build_combined_epub(plan: Plan, books: list[dict], out_dir: str,
         nav_tree.append(vol_node)
 
     path = os.path.join(out_dir, "%s.epub" % safe_filename(out_name))
-    _write_epub(path, _book_id(plan, "combined"), title, chapters, nav_tree, images)
+    _write_epub(path, _book_id(plan, "combined"), title, chapters, nav_tree, images,
+                credit=author_name(plan))
     return path

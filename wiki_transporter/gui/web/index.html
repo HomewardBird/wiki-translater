@@ -1,237 +1,269 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-bs-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/theme.js"></script>
 <title>Wiki Transporter · 安巢鸟</title>
 <link rel="icon" href="/img/logo.png">
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/vendor/tabler.min.css">
+<link rel="stylesheet" href="/skin.css">
 <meta name="token" content="__TOKEN__">
 </head>
-<body>
-<header class="bar">
-  <a class="mark" href="#" id="brand">
-    <img src="/img/logo.png" alt="" class="mark-img">
-    <span class="mark-text"><b>Wiki Transporter</b><i>安巢鸟 · 剧情整理</i></span>
+<body class="wt">
+
+<header class="wt-top">
+  <a class="wt-brand" href="#" id="brand">
+    <span class="wt-mark" aria-hidden="true"></span>
+    <span class="wt-brand-t"><b>Wiki Transporter</b><i>安巢鸟</i></span>
   </a>
-  <nav class="tabs" id="tabs">
-    <button class="tab on" data-view="home">整理</button>
-    <button class="tab" data-view="library">书库</button>
-    <button class="tab" data-view="sources">来源</button>
-    <button class="tab" data-view="settings">设置</button>
+  <nav class="wt-tabs" id="tabs" aria-label="主导航">
+    <button class="wt-tab on" data-view="home">整理</button>
+    <button class="wt-tab" data-view="library">书库</button>
+    <button class="wt-tab" data-view="settings">设置</button>
   </nav>
-  <div class="bar-end">
-    <span class="stat" id="status-pill"><i></i>就绪</span>
-  </div>
+  <button class="wt-theme" id="theme-toggle" title="切换纸色 / 墨色" aria-label="切换深浅色">
+    <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+    <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path></svg>
+  </button>
+  <button class="wt-status" id="status-pill" title="生成进度"><i></i><span>就绪</span></button>
 </header>
 
 <!-- ---------------------------------------------------------------- 整理 -->
-<main id="view-home" class="view view-home">
-  <div class="work">
-
-    <div class="work-main">
-      <div class="work-head">
-        <div class="picker" id="picker">
-          <button class="picker-btn" id="picker-btn" aria-haspopup="listbox" aria-expanded="false">
-            <span class="pk-label">来源</span>
-            <b id="pk-name">…</b>
-            <span class="pk-count" id="pk-count"></span>
-            <svg class="pk-caret" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"></path></svg>
-          </button>
-          <div class="pk-menu" id="pk-menu" role="listbox" hidden></div>
-        </div>
-        <div class="work-head-end">
-          <span class="hint-key"><kbd>/</kbd> 聚焦搜索</span>
-          <button class="btn" id="batch-open" title="一次粘贴一大段清单">批量加入</button>
+<main id="view-home" class="view wt-view">
+  <div class="wt-grid">
+    <div class="wt-main">
+      <div class="card wt-card">
+        <div class="card-body">
+          <div class="wt-meta">
+            <span class="wt-dot"></span>
+            <span>明日方舟 · PRTS</span>
+            <span class="wt-sep"></span>
+            <span id="hero-index">索引读取中</span>
+            <div class="ms-auto d-flex gap-2">
+              <button class="btn btn-sm btn-ghost-secondary" id="batch-open">批量加入</button>
+            </div>
+          </div>
+          <div class="input-group wt-search">
+            <span class="input-group-text">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+            </span>
+            <input id="q" class="form-control" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="搜索剧情、干员密录或页面代号，回车搜索" aria-label="搜索剧情">
+            <button class="btn btn-icon" id="clear" title="清空" aria-label="清空搜索" type="button">×</button>
+            <span class="input-group-text wt-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+          </div>
+          <div class="wt-try" id="hints">
+            <span>试试</span>
+            <button data-q="画中人">画中人</button>
+            <button data-q="WR-10 夕">WR-10 夕</button>
+            <button data-q="干员密录 夕">干员密录 夕</button>
+            <button data-q="“夕”">精确定位「夕」</button>
+          </div>
         </div>
       </div>
 
-      <div class="search" id="searchbox">
-        <svg class="mag" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
-        <input id="q" type="text" autocomplete="off" spellcheck="false"
-               placeholder="输入剧情名、角色名或页面代号">
-        <button class="clear" id="clear" title="清空">×</button>
-      </div>
-
-      <div class="try" id="hints">
-        <span class="try-label">试试</span>
-        <button data-q="画中人">画中人</button>
-        <button data-q="WR-10 夕">WR-10 夕</button>
-        <button data-q="干员密录 夕">干员密录 夕</button>
-        <button data-q="“夕”">“夕”</button>
-      </div>
-
-      <section class="notice" id="index-banner" hidden>
-        <div>
-          <b>这个来源还没有建索引</b>
-          <p>建一次页面索引（只读标题，几秒钟），之后搜索就是本地的、瞬时的。</p>
+      <section class="card wt-notice" id="index-banner" hidden>
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="flex-fill">
+            <b>还没有建索引</b>
+            <p class="text-secondary mb-0">建一次页面索引（只读标题，几秒钟），之后搜索就是本地的、瞬时的。</p>
+          </div>
+          <span class="text-secondary small" id="index-prog"></span>
+          <button class="btn btn-primary" id="build-index">建立索引</button>
         </div>
-        <span class="notice-prog" id="index-prog"></span>
-        <button class="btn primary" id="build-index">建立索引</button>
       </section>
 
-      <section id="results"></section>
-      <section id="recent-home" class="shelf" hidden></section>
+      <section id="results" class="wt-results"></section>
+      <section id="recent-home" class="wt-shelf" hidden></section>
 
-      <section class="plan-sect" id="plan-block" hidden>
-        <h3 class="sect-head">整套整理<span>已经排好卷次和篇目的整本计划，点一下直接开印</span></h3>
-        <div id="plan-list" class="plan-list"></div>
+      <section class="wt-sect" id="plan-block" hidden>
+        <div class="wt-sect-head">
+          <h2>整套整理</h2>
+          <span>已经排好卷次和篇目的整本计划</span>
+        </div>
+        <div id="plan-list" class="wt-plan-list"></div>
       </section>
     </div>
 
-    <aside class="work-side">
-      <section class="side-block" id="sel-block">
-        <h3 class="side-title">本次选集 <span class="num" id="sel-count">0</span></h3>
-        <ol class="sel-list" id="sel-list"></ol>
-        <p class="side-hint" id="sel-empty">在左侧搜索，勾选要收进书里的篇目。</p>
-        <button class="btn primary block" id="sel-go" disabled>整理成书</button>
+    <aside class="wt-side">
+      <section class="card wt-card" id="sel-block">
+        <div class="card-header">
+          <h2 class="card-title">本次选集</h2>
+          <span class="badge wt-badge ms-auto" id="sel-count">0</span>
+        </div>
+        <div class="wt-sel-wrap">
+          <ol class="wt-sel-list" id="sel-list"></ol>
+          <p class="wt-sel-empty" id="sel-empty">在左侧搜索并勾选篇目，也可以「批量加入」粘贴一整段清单。</p>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-primary w-100" id="sel-go" disabled><span>整理成书</span></button>
+        </div>
       </section>
 
-      <section class="side-block" id="src-info">
-        <h3 class="side-title">当前来源</h3>
-        <div id="src-info-body"></div>
+      <section class="card wt-card" id="src-info">
+        <div class="card-header"><h2 class="card-title">来源与索引</h2></div>
+        <div class="card-body" id="src-info-body"></div>
       </section>
     </aside>
   </div>
 </main>
 
 <!-- ---------------------------------------------------------------- 书库 -->
-<main id="view-library" class="view view-wide" hidden>
-  <header class="page-head">
-    <h1 class="page-title">书库</h1>
-    <p class="page-sub"><span id="lib-count">0</span> 本 · <code id="lib-root"></code></p>
-  </header>
-  <div id="library-list" class="books"></div>
+<main id="view-library" class="view wt-view" hidden>
+  <div class="wt-page-head">
+    <h1>书库</h1>
+    <p><b id="lib-count">0</b> 本书<span class="wt-sep"></span><code id="lib-root"></code></p>
+  </div>
+  <div id="library-list" class="wt-books"></div>
 </main>
 
-<!-- ---------------------------------------------------------------- 来源 -->
-<main id="view-sources" class="view view-wide" hidden>
-  <header class="page-head">
-    <h1 class="page-title">来源</h1>
-    <p class="page-sub">任何 MediaWiki 站点都能接进来：填 api.php 地址即可。抓取只访问该站域名。</p>
-  </header>
-
-  <table class="table">
-    <thead>
-      <tr>
-        <th class="c-name">来源</th>
-        <th class="c-api">api.php</th>
-        <th class="c-parser">解析</th>
-        <th class="c-index num">索引</th>
-        <th class="c-act"></th>
-      </tr>
-    </thead>
-    <tbody id="source-list"></tbody>
-  </table>
-
-  <div class="form-wrap" id="source-form-wrap">
-    <button class="form-toggle" id="form-toggle" type="button" aria-expanded="false">
-      <span class="plus">+</span><span id="form-title">添加来源</span>
-    </button>
-    <div class="form-body" id="form-body" hidden>
-      <div class="form-grid">
-        <label class="field"><span>显示名</span><input id="f-name" placeholder="例如 明日方舟 · PRTS"></label>
-        <label class="field"><span>api.php 地址</span><input id="f-api" placeholder="https://prts.wiki/api.php"></label>
-        <label class="field"><span>站点主页（可选）</span><input id="f-home" placeholder="https://prts.wiki"></label>
-        <label class="field"><span>解析方式</span>
-          <select id="f-parser">
-            <option value="generic">通用解析（按「角色：台词」切分）</option>
-            <option value="prts">PRTS 模板解析（明日方舟专用）</option>
-          </select>
-        </label>
-        <label class="field wide"><span>建索引用的分类（逗号分隔，可空）</span><input id="f-categories" placeholder="剧情, 干员密录"></label>
-        <label class="field wide"><span>建索引用的标题前缀（逗号分隔，可空）</span><input id="f-prefixes" placeholder="世界任务"></label>
-        <label class="field wide"><span>标题过滤正则（可选）</span><input id="f-regex" placeholder="/BEG$|/END$|/NBT$"></label>
-      </div>
-      <div class="form-foot">
-        <button class="btn" id="f-test">测试连接</button>
-        <span class="probe" id="f-probe"></span>
-        <div class="spacer"></div>
-        <button class="btn ghost" id="form-reset">清空</button>
-        <button class="btn primary" id="f-save">保存来源</button>
-      </div>
-    </div>
+<!-- ---------------------------------------------------------------- 实体浏览页 -->
+<main id="view-entity" class="view wt-view" hidden>
+  <div class="wt-page-head">
+    <button class="btn btn-sm btn-ghost-secondary" id="entity-back" style="margin-bottom:14px">← 返回搜索</button>
+    <h1 id="entity-title">实体</h1>
+    <p id="entity-sub" class="text-secondary"></p>
   </div>
+  <section class="card wt-card" id="entity-related-card" style="margin-bottom:20px">
+    <div class="card-body">
+      <div class="wt-chips" id="entity-related"></div>
+    </div>
+  </section>
+  <div class="d-flex gap-2" style="margin-bottom:16px">
+    <button class="btn btn-primary" id="entity-add-all" hidden>整批加入选集</button>
+  </div>
+  <section id="entity-list"></section>
 </main>
 
 <!-- ---------------------------------------------------------------- 设置 -->
-<main id="view-settings" class="view" hidden>
-  <header class="page-head">
-    <h1 class="page-title">设置</h1>
-    <p class="page-sub">产物目录、配置文件与运行环境。</p>
-  </header>
+<main id="view-settings" class="view wt-view" hidden>
+  <div class="wt-page-head">
+    <h1>设置</h1>
+    <p>产物目录、默认打开方式与运行环境。</p>
+  </div>
 
-  <section class="sect">
-    <h2 class="sect-title">书籍存放位置</h2>
-    <div class="sect-body">
-      <div class="row">
-        <label class="row-label" for="set-root-input">产物目录</label>
-        <div class="row-value">
-          <div class="inline">
-            <input id="set-root-input" placeholder="留空 = 程序所在目录" spellcheck="false">
+  <section class="card wt-card">
+    <div class="card-header"><h2 class="card-title">书籍存放位置</h2></div>
+    <div class="card-body">
+      <div class="wt-row">
+        <label for="set-root-input">产物目录</label>
+        <div class="wt-row-body">
+          <div class="input-group" style="max-width:620px">
+            <input id="set-root-input" class="form-control" placeholder="留空 = 程序所在目录" spellcheck="false">
             <button class="btn" id="root-pick">选择…</button>
-            <button class="btn" id="root-save">保存</button>
+            <button class="btn btn-primary" id="root-save">保存</button>
           </div>
-          <p class="row-note">抓取缓存、中间文件和导出的书都放这里。已经生成的书不会自动搬家。
-            <button class="link" id="root-reset">恢复默认</button></p>
-          <p class="probe" id="root-hint"></p>
+          <p class="wt-note">已经生成的书不会自动搬家。<button class="wt-link" id="root-reset">恢复默认</button></p>
+          <p class="wt-note" id="root-hint"></p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="sect">
-    <h2 class="sect-title">打开方式</h2>
-    <div class="sect-body">
-      <div class="row">
-        <label class="row-label">默认格式</label>
-        <div class="row-value">
-          <div class="seg" id="open-kind">
-            <button class="seg-item" type="button" data-kind="auto">自动</button>
-            <button class="seg-item" type="button" data-kind="pdf">PDF</button>
-            <button class="seg-item" type="button" data-kind="docx">Word</button>
-            <button class="seg-item" type="button" data-kind="epub">EPUB</button>
+  <section class="card wt-card">
+    <div class="card-header"><h2 class="card-title">打开方式</h2></div>
+    <div class="card-body">
+      <div class="wt-row">
+        <span class="wt-row-label">默认格式</span>
+        <div class="wt-row-body">
+          <div class="btn-group" role="group" id="open-kind">
+            <button class="btn" type="button" data-kind="auto">自动</button>
+            <button class="btn" type="button" data-kind="pdf">PDF</button>
+            <button class="btn" type="button" data-kind="docx">Word</button>
+            <button class="btn" type="button" data-kind="epub">EPUB</button>
           </div>
-          <p class="row-note">首页和书库点书时用这个格式打开。单卷、单篇的文件在书库卡片里展开「文件」逐个打开；
-            想临时换格式就右键书卡。</p>
+          <p class="wt-note">单卷、单篇的文件在书库列表里展开「文件」逐个打开；想临时换格式就右键书卡。</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="sect">
-    <h2 class="sect-title">运行环境</h2>
-    <div class="sect-body">
-      <div class="row"><span class="row-label">当前生效目录</span>
-        <div class="row-value"><code id="set-root"></code>
-          <button class="link" data-open="root">打开</button></div></div>
-      <div class="row"><span class="row-label">整理者</span>
-        <div class="row-value"><code>安巢鸟</code></div></div>
-      <div class="row"><span class="row-label">配置文件</span>
-        <div class="row-value"><code id="set-settings"></code>
-          <button class="link" data-open="settings-file">打开</button></div></div>
-      <div class="row"><span class="row-label">来源配置</span>
-        <div class="row-value"><code id="set-sources"></code>
-          <button class="link" data-open="sources">打开</button></div></div>
-      <div class="row"><span class="row-label">渲染引擎</span>
-        <div class="row-value"><code>Chromium（随系统 Chrome / Edge）</code></div></div>
-      <div class="row"><span class="row-label">版本</span>
-        <div class="row-value"><code id="set-version"></code></div></div>
+  <section class="card wt-card">
+    <div class="card-header"><h2 class="card-title">AI 智能检索</h2><span class="wt-head-note" id="llm-status">未配置</span></div>
+    <div class="card-body">
+      <div class="wt-row">
+        <span class="wt-row-label">启用</span>
+        <div class="wt-row-body">
+          <label class="form-check">
+            <input class="form-check-input" type="checkbox" id="llm-enabled">
+            <span>用模型把查询拆成「概念 / 别名 / 方面」，再检索</span>
+          </label>
+          <p class="wt-note">不配也能用：离线时靠别名表 + 实体共现，配了更全面。</p>
+        </div>
+      </div>
+      <div class="wt-row">
+        <label for="llm-base">接口地址</label>
+        <div class="wt-row-body">
+          <input id="llm-base" class="form-control" spellcheck="false"
+                 placeholder="http://127.0.0.1:11434/v1（Ollama）或 https://api.deepseek.com/v1">
+          <p class="wt-note">OpenAI 兼容协议：Ollama、LM Studio、DeepSeek、OpenAI 通用。本地模型不用联网、不用 key。</p>
+        </div>
+      </div>
+      <div class="wt-row">
+        <label for="llm-key">API Key</label>
+        <div class="wt-row-body">
+          <input id="llm-key" class="form-control" type="password" spellcheck="false" placeholder="本地模型留空">
+        </div>
+      </div>
+      <div class="wt-row">
+        <label for="llm-model">模型</label>
+        <div class="wt-row-body">
+          <input id="llm-model" class="form-control" spellcheck="false" placeholder="qwen2.5:7b / deepseek-chat">
+        </div>
+      </div>
+      <div class="wt-row">
+        <label for="llm-embed">向量模型</label>
+        <div class="wt-row-body">
+          <input id="llm-embed" class="form-control" spellcheck="false" placeholder="bge-m3（留空 = 不做向量检索）">
+          <p class="wt-note">填了才能建向量索引：语义相近但字面不相邻的篇目也能召回。</p>
+          <div class="wt-row-acts">
+            <button class="btn" id="llm-test">测试连接</button>
+            <button class="btn" id="llm-embed-build">建立向量索引</button>
+            <button class="btn btn-primary" id="llm-save">保存</button>
+          </div>
+          <p class="wt-note" id="llm-hint"></p>
+        </div>
+      </div>
+      <div class="wt-row">
+        <span class="wt-row-label">本地向量模型</span>
+        <div class="wt-row-body">
+          <div class="wt-row-acts">
+            <button class="btn" id="model-download">下载模型（约 24MB）</button>
+            <button class="btn btn-ghost-secondary" id="model-remove">删除模型</button>
+            <span class="wt-note" id="model-state">未下载</span>
+          </div>
+          <p class="wt-note">bge-small-zh-v1.5，纯 CPU 跑，不联网、不要 key：下完之后语义检索整段都在本机，剧情文本不出机器。</p>
+          <p class="wt-note" id="model-hint"></p>
+        </div>
+      </div>
     </div>
-    <p class="sect-note">索引缓存在用户目录，7 天后自动重建；也可以在「来源」里手动重建。</p>
+  </section>
+
+  <section class="card wt-card">
+    <div class="card-header"><h2 class="card-title">运行环境</h2><span class="wt-head-note">只读</span></div>
+    <div class="card-body wt-env">
+      <div class="wt-row"><span>当前生效目录</span><div class="wt-row-body"><code id="set-root"></code><button class="wt-link" data-open="root">打开</button></div></div>
+      <div class="wt-row"><span>整理者</span><div class="wt-row-body"><code>安巢鸟 · 整理</code><code class="wt-dim">默认写入，可关</code></div></div>
+      <div class="wt-row"><span>配置文件</span><div class="wt-row-body"><code id="set-settings"></code><button class="wt-link" data-open="settings-file">打开</button></div></div>
+      <div class="wt-row"><span>来源</span><div class="wt-row-body"><code>明日方舟 · PRTS</code><code class="wt-dim">https://prts.wiki/api.php</code></div></div>
+      <div class="wt-row"><span>渲染引擎</span><div class="wt-row-body"><code>Chromium（随系统 Chrome / Edge）</code></div></div>
+      <div class="wt-row"><span>版本</span><div class="wt-row-body"><code id="set-version"></code></div></div>
+    </div>
+    <div class="card-footer wt-note">索引缓存在用户目录，7 天后自动重建；也可以在「整理」页右侧点「重建索引」。</div>
   </section>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
-<aside class="panel" id="panel" hidden>
-  <div class="panel-head">
-    <b id="panel-title">整理成书</b>
-    <button class="icon-btn" id="panel-close" title="关闭">×</button>
+<aside class="offcanvas offcanvas-end wt-panel" id="panel" hidden aria-label="整理成书">
+  <div class="offcanvas-header">
+    <h2 class="offcanvas-title" id="panel-title">整理成书</h2>
+    <button class="btn-close" id="panel-close" aria-label="关闭"></button>
   </div>
-  <div class="panel-body" id="panel-body"></div>
+  <div class="offcanvas-body" id="panel-body"></div>
 </aside>
 
-<div class="toast-wrap" id="toasts"></div>
+<div class="toast-wrap" id="toasts" aria-live="polite"></div>
 
 <script src="/app.js"></script>
 </body>

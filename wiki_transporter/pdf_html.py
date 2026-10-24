@@ -257,13 +257,14 @@ def _cover_html(plan: Plan, title: str, subtitle: str, meta_lines: list[str],
         kind = "plain"
     cls = "" if kind == "bleed" else " " + kind
     style = (' style="--hero:url(&quot;%s&quot;)"' % esc(file_uri(path))) if path else ""
+    brand = ('<div class="brand">%s</div>' % esc(author_name(plan))) if author_name(plan) else ""
     return ('<div class="cover%s"%s><div class="veil"></div>'
             '<div class="cap"><div class="series">%s</div>'
             '<div class="vol">%s</div><div class="rule"></div>'
             '<div class="sub">%s</div><div class="meta">%s</div></div>'
-            '<div class="brand">安巢鸟 · 整理</div></div>\n'
+            '%s</div>\n'
             % (cls, style, esc(_series_label(plan, title)),
-               esc(title), esc(subtitle), meta))
+               esc(title), esc(subtitle), meta, brand))
 
 
 def _fanli_html(plan: Plan) -> str:
@@ -625,7 +626,7 @@ def _locate_pages(pdf_path: str, entries: list[dict]) -> dict[int, int]:
 
 def _finalize(pdf_path: str, entries: list[dict], pages: dict[int, int],
               title: str, number_pages: bool = True, subject: str = "",
-              keywords: str = "") -> int:
+              keywords: str = "", credit: str = "") -> int:
     """加页脚页码 + 书签 + 文档属性。返回总页数。"""
     try:
         import pymupdf
@@ -659,9 +660,12 @@ def _finalize(pdf_path: str, entries: list[dict], pages: dict[int, int],
         if toc:
             doc.set_toc(toc)
         meta = doc.metadata or {}
-        meta.update({"title": title, "author": author_name(),
-                     "subject": subject or title,
+        meta.update({"title": title, "subject": subject or title,
                      "keywords": keywords or "剧情, 文字稿, Wiki"})
+        if credit:
+            meta["author"] = credit
+        else:
+            meta.pop("author", None)
         doc.set_metadata(meta)
         tmp = pdf_path + ".tmp"
         # garbage=1 只去掉重复对象；garbage=3/4 会重建全部 xref，一本千页的书要多花
@@ -712,7 +716,8 @@ def _make_pdf(plan: Plan, builder, out_path: str, browser: str, work: str,
     label = source_short(plan)
     total = _finalize(out_path, entries2, pages, title,
                       subject="%s · 剧情文字稿" % label,
-                      keywords="%s, 剧情, 文字稿" % label)
+                      keywords="%s, 剧情, 文字稿" % label,
+                      credit=author_name(plan))
     stage(1.0, "完成")
     return total, len(entries2)
 

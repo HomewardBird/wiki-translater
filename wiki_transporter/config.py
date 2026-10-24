@@ -104,10 +104,13 @@ class Plan:
     def _load(self, data: dict) -> None:
         self.data = data
         self.title = self.data.get("title") or self.id
+        # 整理者署名默认写进产物；生成时可以勾掉（data["credit"] = False）。
+        # 凡例里那一行在这里现拼，不改老计划文件里的 fanli 原文。
+        _credit = self.data.get("credit")
+        self.credit = True if _credit is None else bool(_credit)
         self.fanli = list(self.data.get("fanli") or [])
-        # 旧计划文件里没有署名行：统一补上，保证每本书都写清整理者
-        if not any("整理与排版" in line for line in self.fanli):
-            self.fanli.append("整理与排版：%s。" % author_name())
+        if self.credit and not any("整理与排版" in line for line in self.fanli):
+            self.fanli.append("整理与排版：%s。" % CREDIT)
         self.volumes = self.data.get("volumes") or []
         self.source = self.data.get("source") or ""
         # 封面：cover 给本地图片（字符串，或按卷顺序的列表），给了就不联网抓；
@@ -128,6 +131,17 @@ class Plan:
             json.dump(self.data, f, ensure_ascii=False, indent=1)
         self.plan_path = target
         return target
+
+    def apply_credit(self, on: bool) -> None:
+        """生成前开关整理者署名：文档属性/封面看 self.credit，凡例那一行在这里加或去。"""
+        self.credit = bool(on)
+        self.data["credit"] = self.credit
+        line = "整理与排版：%s。" % CREDIT
+        if self.credit:
+            if not any("整理与排版" in x for x in self.fanli):
+                self.fanli.append(line)
+        else:
+            self.fanli = [x for x in self.fanli if "整理与排版" not in x]
 
     # ---------- 目录 ----------
     @property
@@ -190,10 +204,13 @@ def app_home() -> str:
 
 
 # ---------------------------------------------------------------- 用户设置
-# 整理者署名是固定的（安巢鸟本人做的这套书），不开放给用户改
+# 整理者署名：默认不写进产物，用户生成时勾选「写入整理者署名」才生效
 AUTHOR = "安巢鸟"
+CREDIT = "安巢鸟 · 整理"
 DEFAULT_AUTHOR = AUTHOR
-_DEFAULT_SETTINGS = {"out_root": ""}
+_DEFAULT_SETTINGS = {"out_root": "", "llm_enabled": "", "llm_base_url": "",
+                     "llm_api_key": "", "llm_model": "", "llm_embed_model": "",
+                     "llm_embed_local": ""}
 _settings_cache: dict | None = None
 
 
@@ -213,7 +230,9 @@ def load_settings() -> dict:
         if isinstance(raw, dict):
             for key in _DEFAULT_SETTINGS:
                 val = raw.get(key)
-                if isinstance(val, str):
+                if isinstance(val, bool):
+                    data[key] = "1" if val else ""
+                elif isinstance(val, str):
                     data[key] = val
     except (OSError, ValueError):
         pass
@@ -226,8 +245,13 @@ def save_settings(patch: dict) -> dict:
     global _settings_cache
     data = dict(load_settings())
     for key in _DEFAULT_SETTINGS:
-        if key in patch and isinstance(patch[key], str):
-            data[key] = patch[key].strip()
+        if key not in patch:
+            continue
+        val = patch[key]
+        if isinstance(val, bool):
+            data[key] = "1" if val else ""
+        elif isinstance(val, str):
+            data[key] = val.strip()
     if data["out_root"]:
         data["out_root"] = os.path.abspath(
             os.path.expandvars(os.path.expanduser(data["out_root"])))
@@ -247,9 +271,11 @@ def reset_settings_cache() -> None:
     _settings_cache = None
 
 
-def author_name() -> str:
-    """整理者署名（固定）。"""
-    return AUTHOR
+def author_name(plan=None) -> str:
+    """整理者署名「安巢鸟 · 整理」；plan 关掉署名时返回空串，调用方据此不写这一项。"""
+    if plan is not None and not getattr(plan, "credit", True):
+        return ""
+    return CREDIT
 
 
 def source_short(plan) -> str:

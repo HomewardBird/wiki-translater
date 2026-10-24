@@ -269,6 +269,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="不联网抓封面立绘，只用本机占位图")
     common.add_argument("--cover-image", action="append", metavar="PATH",
                         help="用自己的图片做封面（可给多次，按卷顺序依次使用）")
+    common.add_argument("--no-credit", action="store_true",
+                        help="不写整理者署名（PDF 文档属性 / Word 作者 / EPUB dc:creator / 封面 / 凡例）")
 
     p = argparse.ArgumentParser(
         prog="wiki-transporter",
@@ -387,6 +389,8 @@ def main(argv: list[str] | None = None) -> int:
     # 命令行封面开关覆盖计划文件里的设置（命令行 > 计划文件）
     if getattr(args, "no_cover", False):
         plan.cover_fetch = False
+    # 整理者署名默认写；--no-credit 才关掉
+    plan.apply_credit(not getattr(args, "no_credit", False))
     covers = getattr(args, "cover_image", None)
     if covers:
         plan.cover = covers if len(covers) > 1 else covers[0]

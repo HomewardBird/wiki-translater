@@ -1,0 +1,62 @@
+/* 交互补丁 v7.1 —— 只留看不见的功能，不往界面上加解释性小字。
+   1) 搜索请求中的可见反馈
+   2) 结果行的键盘光标
+   3) 生成中状态灯可点回进度
+   4) 选集调序箭头：鼠标进入该行才露出，默认不占视觉 */
+
+/* ---- 搜索中 ---- */
+.search.busy { position: relative; }
+.search.busy .kbd-hint { display: none; }
+.search.busy .clear { display: none; }
+.search.busy::after {
+  content: "";
+  position: absolute; right: 18px; top: 50%;
+  width: 14px; height: 14px; margin-top: -7px;
+  border: 1.5px solid var(--line-3); border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: wt-spin .7s linear infinite;
+}
+@keyframes wt-spin { to { transform: rotate(360deg); } }
+
+/* ---- 结果行键盘光标 ---- */
+.row-hit.cursor {
+  background: linear-gradient(90deg, rgba(226, 180, 92, .085), rgba(255, 255, 255, .012));
+  box-shadow: inset 0 0 0 1px rgba(226, 180, 92, .28);
+}
+.row-hit.cursor .hit-name { color: var(--gold-soft); }
+
+/* ---- 已选数：一行文字，不做胶囊 ---- */
+.res-head .res-sel { font-size: 12px; color: var(--gold-soft); }
+
+/* ---- 选集调序 ---- */
+.sel-item .mv {
+  flex: none; display: flex; gap: 1px;
+  opacity: 0; transition: opacity var(--t) var(--ease);
+}
+.sel-item:hover .mv, .sel-item:focus-within .mv { opacity: 1; }
+.mv-btn {
+  width: 18px; height: 18px; border-radius: 4px;
+  font-size: 10px; line-height: 1; color: var(--faint);
+  transition: color var(--t) var(--ease), background var(--t) var(--ease);
+}
+.mv-btn:hover:not([disabled]) { color: var(--text); background: rgba(255, 255, 255, .06); }
+.mv-btn[disabled] { opacity: .25; cursor: default; }
+@media (hover: none) { .sel-item .mv { opacity: 1; } }
+
+/* ---- 生成中：状态灯可点 ---- */
+.stat.act { cursor: pointer; }
+.stat.act:hover { border-color: var(--gold-line); }
+
+/* ---- 搜索态：不要让隐藏的标题占着高度 ---- */
+.view-home.is-searching .hero { padding-top: 22px; padding-bottom: 0; }
+.view-home.is-searching .work { margin-top: 0; }
+.view-home.is-searching .results { margin-top: 8px; }
+
+/* ---- 空结果里的动作 ---- */
+.empty-acts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+
+@media (max-width: 900px) {
+  .res-head { flex-wrap: wrap; row-gap: 6px; }
+  .res-head b, .res-head span, .res-head .res-sel { white-space: nowrap; }
+  .res-head .spacer { display: none; }
+}

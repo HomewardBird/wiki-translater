@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wiki-transporter"
-version = "1.5.0"
+version = "1.6.0"
 description = "抓取 PRTS 上的明日方舟剧情 wikitext，排版成 Word / PDF / EPUB 分卷书"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -12,6 +12,10 @@ license = { text = "MIT" }
 authors = [{ name = "Wiki Transporter contributors" }]
 keywords = ["arknights", "prts", "mediawiki", "wikitext", "epub", "docx", "ebook"]
 dependencies = ["python-docx>=1.1", "pymupdf>=1.24"]
+
+[project.optional-dependencies]
+# 本地语义检索（bge-small-zh，纯 CPU）。不装也能用，只是没有向量检索
+semantic = ["onnxruntime>=1.20", "tokenizers>=0.20"]
 
 [project.scripts]
 wiki-transporter = "wiki_transporter.cli:main"

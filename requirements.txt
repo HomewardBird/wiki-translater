@@ -1,2 +1,5 @@
 python-docx>=1.1
 pymupdf>=1.24
+# 可选：本地语义检索（bge-small-zh，纯 CPU）。装上才有向量检索能力
+onnxruntime>=1.20
+tokenizers>=0.20

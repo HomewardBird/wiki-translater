@@ -34,6 +34,11 @@ from ..catalog import (Catalog, build_catalog, build_names, load_catalog,
                        needs_names, norm, search)
 from ..compose import compose_groups, compose_plan
 from ..resolve import resolve_lines, topic_search
+from .. import smart as text_index
+from .. import deep as deep_search
+from .. import themes as theme_index
+from .. import fulltext as full_index
+from .. import entity as entity_index
 from ..config import (Plan, app_home, author_name, builtin_plans,
                       ensure_dir, load_settings, safe_filename,
                       save_settings, settings_path, user_data_dir, workspace_dir)
@@ -41,8 +46,7 @@ from ..fetch import fetch_titles
 from ..images import (cover_fetch_enabled, fetch_portraits, set_user_cover_config,
                       user_cover_dir, user_covers)
 from ..parse import book_stats, build_books
-from ..sources import (all_sources, get_source, load_user_sources, normalize_source,
-                       probe, save_user_sources, store_path)
+from ..sources import PRTS
 from ..net import NetError, UnsafeURLError
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
@@ -199,26 +203,25 @@ class App:
         self.root = workspace_dir()
         self.token = secrets.token_urlsafe(24)
         self.jobs: dict[str, Job] = {}
-        self.catalogs: dict[str, Catalog] = {}
+        self.catalog: Catalog | None = None
         self.thumbs: dict[str, bytes] = {}
         self._lock = threading.Lock()
         self._build_lock = threading.Lock()
         self.started = time.time()
 
     # ---------- 索引 ----------
-    def catalog(self, source_id: str) -> Catalog:
+    def get_catalog(self) -> Catalog:
         with self._lock:
-            if source_id in self.catalogs:
-                return self.catalogs[source_id]
-        cat = load_catalog(get_source(source_id))
+            if self.catalog is not None:
+                return self.catalog
+        cat = load_catalog(PRTS)
         with self._lock:
-            self.catalogs[source_id] = cat
+            self.catalog = cat
         return cat
 
-    def refresh_catalog(self, source_id: str, job: Job) -> Catalog:
-        source = get_source(source_id)
-        job.emit("读取页面索引：%s" % source.name, 0.01, phase="建立索引")
-        cat = build_catalog(source, progress=lambda d, t, m: job.step(
+    def refresh_catalog(self, job: Job) -> Catalog:
+        job.emit("读取页面索引：%s" % PRTS.name, 0.01, phase="建立索引")
+        cat = build_catalog(PRTS, progress=lambda d, t, m: job.step(
             d, t, m, 0.01, 0.88, "建立索引"))
         if needs_names(cat):
             need = sum(1 for e in cat.entries if "/干员密录/" in e.title)
@@ -226,7 +229,7 @@ class App:
             cat = build_names(cat, progress=lambda d, t, m: job.step(
                 d, t, m, 0.88, 0.99, "补全篇名"))
         with self._lock:
-            self.catalogs[source_id] = cat
+            self.catalog = cat
         return cat
 
     def start_job(self, kind: str, title: str, fn) -> Job:
@@ -421,12 +424,18 @@ class Handler(BaseHTTPRequestHandler):
                 "app": {"name": APP_NAME, "cn": APP_CN, "version": __version__},
                 "root": app.root,
                 "settings": self._settings_json(),
-                "sources": [self._source_json(s) for s in all_sources()],
+                "indexed": len(app.get_catalog().entries),
                 "recent": app.recent(),
                 "uptime": round(time.time() - app.started, 1),
             })
         if path == "/api/settings":
             return self._json({"ok": True, "settings": self._settings_json()})
+        if path == "/api/model/status":
+            from .. import localembed
+            from .. import llm as _llm
+
+            return self._json({"ok": True, "model": localembed.status(),
+                               "enabled": bool(_llm.config().get("embed_local"))})
         if path == "/api/recent":
             return self._json({"ok": True, "items": app.recent()})
         if path == "/api/plans":
@@ -456,15 +465,20 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/api/job/([0-9a-f]+)/stream", path)
         if m:
             return self._stream(m.group(1))
-        if path == "/api/source/index":
-            sid = (query.get("id") or [""])[0]
-            cat = app.catalog(sid)
-            return self._json({"ok": True, "count": len(cat.entries),
-                               "built_at": cat.built_at, "names": cat.names_built})
         if path == "/api/thumb":
             return self._thumb(query)
         if path == "/api/cover":
             return self._cover_get(query)
+        if path == "/api/entity":
+            name = (query.get("name") or [""])[0].strip()
+            if not name:
+                return self._error("缺少实体名", 400)
+            return self._json({"ok": True, "entity": entity_index.entity_page(name)})
+        if path == "/api/prereq":
+            code = (query.get("code") or [""])[0].strip()
+            if not code:
+                return self._error("缺少章节代号", 400)
+            return self._json({"ok": True, "prereq": entity_index.prereq(code)})
         return self._error("未知接口", 404)
 
     def _thumb(self, query: dict):
@@ -543,14 +557,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._open(body)
         if path == "/api/book/delete":
             return self._book_delete(body)
-        if path == "/api/source/save":
-            return self._save_source(body)
-        if path == "/api/source/delete":
-            return self._delete_source(body)
-        if path == "/api/source/test":
-            return self._test_source(body)
         if path == "/api/settings/save":
             return self._save_settings(body)
+        if path == "/api/settings/test":
+            return self._llm_test(body)
+        if path == "/api/llm/embed-build":
+            return self._start_embed()
+        if path == "/api/model/download":
+            return self._start_model_download()
+        if path == "/api/model/remove":
+            return self._model_remove()
         if path == "/api/pick-dir":
             return self._pick_dir(body)
         if path == "/api/cover":
@@ -561,40 +577,112 @@ class Handler(BaseHTTPRequestHandler):
         return self._error("未知接口", 404)
 
     # ---------- 具体接口 ----------
-    def _source_json(self, s) -> dict:
-        cat = None
-        try:
-            cat = self.app.catalog(s.id)
-        except Exception:
-            cat = None
-        return {
-            "id": s.id,
-            "name": s.name,
-            "api": s.api,
-            "home": s.home,
-            "parser": s.parser,
-            "categories": s.categories,
-            "prefixes": s.prefixes,
-            "page_regex": s.page_regex,
-            "accent": s.accent,
-            "note": s.note,
-            "builtin": s.builtin,
-            "indexed": len(cat.entries) if cat else 0,
-            "names": bool(cat.names_built) if cat else False,
-        }
-
     def _search(self, body: dict):
         q = (body.get("q") or "").strip()
-        sid = body.get("source") or "prts"
-        cat = self.app.catalog(sid)
+        limit = int(body.get("limit") or 200)
+        cat = self.app.get_catalog()
         if not cat.entries:
             return self._json({"ok": True, "mode": "noindex", "results": [],
-                               "did_you_mean": None, "total": 0, "source": sid})
+                               "did_you_mean": None, "total": 0,
+                               "text": self._text_search(q, limit)})
         remote = bool(body.get("remote", True))
-        res = search(cat, q, limit=int(body.get("limit") or 24), remote=remote)
+        res = search(cat, q, limit=limit, remote=remote)
         res = self._with_topic(cat, q, res, remote=remote)
-        res.update({"ok": True, "source": sid, "indexed": len(cat.entries)})
+        # 主题召回压在最前面：搜「岁家」该把 plans/sui.json 那份 10 卷 142 篇整批摆出来
+        theme = self._theme_recall(q)
+        if theme:
+            res = self._merge_theme(cat, res, theme)
+        text = self._text_search(q, max(limit, 40))
+        # 有主题清单时正文命中全是噪声（共现扩展召回的不相关活动），
+        # 清单已完整，不需要再补充
+        if text and not res.get("theme"):
+            res = self._merge_text_rows(cat, res, text)
+        res.update({"ok": True, "indexed": len(cat.entries), "text": text})
+        # 实体信号：命中别名表里的实体时，给前端一个入口跳转实体页
+        und = deep_search.understand(q)
+        concept = und.get("concept") or ""
+        if concept and concept in deep_search.ALIASES:
+            res["entity_hint"] = {"name": concept, "aliases": und.get("terms", [])[:8]}
         return self._json(res)
+
+    def _text_search(self, q: str, limit: int) -> dict | None:
+        """正文检索兜底：标题索引里根本没有「萨卡兹」这种世界观词。"""
+        if not q:
+            return None
+        try:
+            st = text_index.stats()
+            if not st["docs"] and text_index.iter_raw():
+                text_index.build()  # 首次搜索顺手建索引，146 篇约 1 秒
+            # 概念层：岁家 → 别名/共现/LLM 扩展词，再进 trigram 词法层
+            return deep_search.search(q, limit=min(limit, 200))
+        except Exception as e:
+            return {"error": str(e)[:140], "hits": [], "tree": [],
+                    "timeline": [], "corpus": {"docs": 0}}
+
+    def _arc_label(self, code: str) -> str:
+        """一篇剧情归到哪条线：主线按章号，活动按代号查活动表。
+
+        有了这个，「萨卡兹」的 47 篇才是一条条「第 10 章 → 第 11 章 → 覆潮之下」
+        的阅读线，而不是一屏乱序篇名。
+        """
+        m = re.match(r"^(\d+)-", code or "")
+        if m:
+            return "第 %s 章 · 主线" % m.group(1)
+        head = (code or "").split("-")[0].upper()
+        if not head:
+            return "其它剧情"
+        cache = getattr(self.app, "_arc_map", None)
+        if cache is None:
+            cache = {}
+            try:
+                for a in theme_index.load():
+                    for cd in (a.get("codes") or []):
+                        cache.setdefault(str(cd).upper(),
+                                         a.get("short") or a.get("name") or cd)
+            except Exception:
+                pass
+            self.app._arc_map = cache
+        name = cache.get(head)
+        return ("活动 · " + name) if name else ("剧情 · " + head)
+
+    def _merge_text_rows(self, cat: Catalog, res: dict, text: dict) -> dict:
+        """正文命中优先：标题层只按字面相似度排，会把 spine/档案垫在最前面。
+
+        规则：专题行（group）和精确同名行保持最高分；其余标题相似行压到 700 以下，
+        让正文命中（800 起）排上去——但正文一篇都没命中时什么都不动。
+        """
+        hits = text.get("hits") or []
+        if not hits:
+            return res
+        rows = res.get("results") or []
+        out = []
+        for r in rows:
+            if not r.get("group") and not r.get("exact"):
+                title = r.get("title") or ""
+                if title.endswith("/spine") or "/spine/" in title or "/档案/" in title:
+                    continue
+                if float(r.get("score") or 0) > 700:
+                    r["score"] = 700
+            out.append(r)
+        have = {r.get("title") for r in out}
+        # 已经有专题清单时，正文命中只做补充：否则清单后面会再拖一整串噪声
+        cap = 12 if any(r.get("group") for r in out) else 200
+        extra = [h for h in hits if h.get("title") not in have][:cap]
+        for i, h in enumerate(extra):
+            have.add(h.get("title"))
+            out.append({"title": h["title"], "name": h.get("name") or h["title"],
+                        "code": h.get("code") or "", "kind": "story",
+                        "score": 800 - i, "exact": False, "from": "text",
+                        "group": self._arc_label(h.get("code") or "")})
+        # 排序：发布时间线为主——同活动篇目连在一起、活动间按 CN 服实装时间。
+        # 主题召回行（专题清单）保持原计划卷序在前，正文补充行按 _route_key 排在后。
+        themed = [r for r in out if r.get("group") and r.get("exact")]
+        plain = [r for r in out if not (r.get("group") and r.get("exact"))]
+        from ..smart import _route_key
+        plain.sort(key=_route_key)
+        res["results"] = themed + plain
+        res["total"] = len(res["results"])
+        return res
 
     def _with_topic(self, cat: Catalog, q: str, res: dict, remote: bool = True) -> dict:
         """单独搜索也按主题展开：输入「将进酒」直接把整卷剧情摆出来。"""
@@ -632,19 +720,177 @@ class Handler(BaseHTTPRequestHandler):
         res["did_you_mean"] = None
         return res
 
+    # ---------- 主题召回：认出「自己整理的计划 / 卷」 ----------
+    # plans/*.json 就是用户亲手整理的篇目清单（如 plans/sui.json = 岁家 10 卷 142
+    # 篇）。以前搜索只查页面标题和正文，从不读这些文件，所以搜「岁家」召回 0。
+    # 这一层把计划文件当主题表：查询命中计划名或卷名，就把对应卷的篇目按原顺序整批
+    # 返回，而不是靠标题模糊去猜。
+    _PLAN_NOISE = ("明日方舟", "剧情", "文字稿", "剧本", "整理", "合集", "文字",
+                   "全一册", "相关", "故事", "全篇")
+    _CLEAN_RE = re.compile(r"[^\w\u4e00-\u9fff]+")
+
+    def _clean(self, text) -> str:
+        s = norm(str(text or ""))
+        for w in self._PLAN_NOISE:
+            s = s.replace(norm(w), "")
+        return self._CLEAN_RE.sub("", s)
+
+    def _plan_index(self) -> list[dict]:
+        cache = getattr(self.app, "_plan_theme_cache", None)
+        if cache is not None:
+            return cache
+        out = []
+        for path, fn in plan_files():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                continue
+            vols = []
+            for i, v in enumerate(data.get("volumes") or []):
+                pages = [p for s in (v.get("sections") or [])
+                         for p in (s.get("pages") or []) if p]
+                if pages:
+                    label = str(v.get("title") or "第 %d 卷" % (i + 1))
+                    vols.append({"label": label, "clean": self._clean(label),
+                                 "pages": pages})
+            if not vols:
+                continue
+            title = str(data.get("title") or data.get("name") or fn[:-5])
+            out.append({"id": fn[:-5], "title": title, "clean": self._clean(title),
+                        "volumes": vols})
+        self.app._plan_theme_cache = out
+        return out
+
+    # 「岁的历史发展」这类查询：先剥掉方面词，剩下的单字「岁」也要能命中计划名
+    _PLAN_ASPECTS = ("历史", "发展", "来历", "起源", "关系", "人物", "事件",
+                     "结局", "设定", "背景", "介绍", "世界观", "时间线", "顺序")
+
+    def _plan_recall(self, q: str) -> list[dict]:
+        """查询命中计划名/卷名 → [{label, plan, pages}]，保持计划里的卷序。
+
+        「岁的历史发展」这种问法要先过概念层：方面词剥掉、单字概念补全成
+        「岁家」，否则单字永远匹配不到计划名，142 篇清单就摆不出来。
+        """
+        und = deep_search.understand(q)
+        keys = [und.get("concept"), und.get("core")] + list(und.get("terms") or [])
+        keys = [k for k in keys if k]
+        if not keys:
+            return []
+        out = []
+        for p in self._plan_index():
+            pc = p["clean"]
+            hit_plan = any(k in pc or (len(k) >= 2 and pc in k) for k in keys)
+            for v in p["volumes"]:
+                vc = v["clean"]
+                hit_vol = any(k in vc or (len(k) >= 2 and vc in k) for k in keys)
+                if hit_plan or hit_vol:
+                    out.append({"label": v["label"], "plan": p["title"],
+                                "source": "plan", "pages": v["pages"]})
+        return out
+
+    def _theme_recall(self, q: str) -> list[dict]:
+        """先认用户整理的计划，再认自动活动表（298 个活动 → 1733 篇剧情）。"""
+        groups = self._plan_recall(q)
+        if groups:
+            return [g for g in groups if len(g["pages"]) >= 2]
+        core = self._clean(q)
+        if len(core) < 2:
+            return []
+        qn = norm(q).lower()
+        acts = theme_index.load()
+        if not acts:
+            self._start_themes()  # 首次搜索顺手建一次（约 1 分钟，后台跑）
+            return []
+        out = []
+        for a in acts:
+            keys = [self._clean(a.get("name")), self._clean(a.get("short"))]
+            hit = any(k and len(k) >= 2 and (core in k or k in core) for k in keys)
+            if not hit:
+                for c in (a.get("codes") or []):
+                    c = norm(c).lower()
+                    if c and qn and (qn == c or qn.startswith(c + "-")):
+                        hit = True
+                        break
+            if hit:
+                out.append({"label": a.get("short") or a.get("name"),
+                            "plan": a.get("title") or a.get("short"),
+                            "source": "activity", "pages": a.get("pages") or []})
+        return out
+
+    def _start_themes(self):
+        if getattr(self.app, "_themes_job", None) is not None:
+            return
+
+        def work(job: Job):
+            return theme_index.build(progress=lambda d, t, m: job.step(d, t, m))
+
+        self.app._themes_job = self.app.start_job("themes", "活动主题表", work)
+
+    def _merge_theme(self, cat: Catalog, res: dict, groups: list[dict]) -> dict:
+        from ..catalog import split_title
+
+        by_norm: dict[str, object] = {}
+        for e in cat.entries:
+            by_norm.setdefault(norm(e.title), e)
+        rows: list[dict] = []
+        seen: set[str] = set()
+        for g in groups:
+            for t in g["pages"]:
+                key = norm(t)
+                if key in seen:
+                    continue
+                seen.add(key)
+                e = by_norm.get(key)
+                if e is not None:
+                    row = {"title": e.title, "name": e.name or e.title,
+                           "code": e.code or "", "kind": e.kind or "story"}
+                else:
+                    # 索引里暂时没有这一页也要列出来：清单完整性优先于索引完整性
+                    code, name = split_title(t)
+                    row = {"title": t, "name": name or t,
+                           "code": code or "", "kind": "story"}
+                row.update({"score": 1000.0, "exact": True,
+                            "group": g["label"], "plan": g["plan"]})
+                rows.append(row)
+        if not rows:
+            return res
+        keep = [r for r in (res.get("results") or [])
+                if norm(r.get("title") or "") not in seen]
+        counts: dict[str, int] = {}
+        for r in rows:
+            counts[r["group"]] = counts.get(r["group"], 0) + 1
+        res["results"] = rows + keep
+        res["total"] = len(res["results"])
+        res["groups"] = [{"label": g, "kind": "story", "pages": n}
+                         for g, n in counts.items()]
+        res["theme"] = {"title": groups[0].get("plan") or "",
+                        "source": groups[0].get("source") or "plan",
+                        "volumes": len(counts), "pages": len(rows)}
+        res["did_you_mean"] = None
+        return res
+
     def _start_index(self, body: dict):
-        sid = body.get("source") or "prts"
         force = bool(body.get("force"))
-        source = get_source(sid)
+        # fulltext=true：抓「分类:剧情」全部正文再建 FTS 索引（搜世界观词用）
+        if body.get("fulltext"):
+            def crawl_job(job: Job):
+                res = full_index.crawl(
+                    progress=lambda d, t, m: job.step(d, t, m))
+                res.pop("missing", None)
+                return res
+
+            job = self.app.start_job("fulltext", "抓取全量剧情正文", crawl_job)
+            return self._json({"ok": True, "job": job.id})
 
         def work(job: Job):
             if force:
                 with self.app._lock:
-                    self.app.catalogs.pop(sid, None)
-            cat = self.app.refresh_catalog(sid, job)
-            return {"count": len(cat.entries), "source": sid}
+                    self.app.catalog = None
+            cat = self.app.refresh_catalog(job)
+            return {"count": len(cat.entries)}
 
-        job = self.app.start_job("index", "索引 %s" % source.name, work)
+        job = self.app.start_job("index", "索引 %s" % PRTS.name, work)
         return self._json({"ok": True, "job": job.id})
 
     def _plan_json(self, plan: Plan) -> dict:
@@ -742,20 +988,19 @@ class Handler(BaseHTTPRequestHandler):
         groups, misses = resolve_lines(cat, lines, remote=remote)
         return groups, [m.to_json() for m in misses]
 
-    def _require_index(self, sid: str) -> Catalog:
-        cat = self.app.catalog(sid)
+    def _require_index(self) -> Catalog:
+        cat = self.app.get_catalog()
         if not cat.entries:
-            raise ValueError("这个来源还没建索引，先在「整理」页里建一次")
+            raise ValueError("还没有建索引，先在「整理」页里建一次")
         return cat
 
     def _resolve(self, body: dict):
-        sid = body.get("source") or "prts"
         text = str(body.get("text") or "")
         lines = [ln for ln in re.split(r"[\r\n]+", text) if ln.strip()]
         if not lines:
             raise ValueError("粘贴一段清单：每行写一个主题或页面——活动名（将进酒）、"
                              "干员密录（年、夕、令、重岳的干员密录）、标题、代号或 Wiki 链接")
-        cat = self._require_index(sid)
+        cat = self._require_index()
         groups, missing = self._resolve_lines(cat, lines)
         flat = [e for g in groups for e in g.pages]
         return self._json({
@@ -768,7 +1013,6 @@ class Handler(BaseHTTPRequestHandler):
         })
 
     def _preview(self, body: dict):
-        sid = body.get("source") or "prts"
         plan_file = str(body.get("plan") or "").strip()
         if plan_file:
             try:
@@ -784,14 +1028,14 @@ class Handler(BaseHTTPRequestHandler):
 
         if text.strip() and not titles:
             lines = [ln for ln in re.split(r"[\r\n]+", text) if ln.strip()]
-            cat = self._require_index(sid)
+            cat = self._require_index()
             groups, missing = self._resolve_lines(cat, lines)
             entries = [e for g in groups for e in g.pages]
             if not entries:
                 raise ValueError("这些行都没有匹配到已索引的页面")
-            data = compose_groups(get_source(sid), groups, title=body.get("title"))
+            data = compose_groups(PRTS, groups, title=body.get("title"))
         else:
-            cat = self.app.catalog(sid)
+            cat = self.app.get_catalog()
             by_title = {e.title: e for e in cat.entries}
             entries = [by_title.get(t) for t in titles]
             entries = [e for e in entries if e]
@@ -799,7 +1043,7 @@ class Handler(BaseHTTPRequestHandler):
         if not entries:
             raise ValueError("请先选择要整理的篇目")
         if data is None:
-            data = compose_plan(get_source(sid), entries, title=body.get("title"))
+            data = compose_plan(PRTS, entries, title=body.get("title"))
         plan = Plan.from_dict(self.app.root, data)
         plan.save()
         return self._json({"ok": True, "plan": self._plan_json(plan), "missing": missing})
@@ -820,6 +1064,8 @@ class Handler(BaseHTTPRequestHandler):
             data["title"] = wanted[:60]
             data["filePrefix"] = safe_filename(wanted[:60])
             plan = Plan.from_dict(self.app.root, data, plan_id=plan.id)
+        # 整理者署名默认写进产物，body 里 credit=false 才不写
+        plan.apply_credit(body.get("credit") is not False)
         # 内置计划只在包里，用户目录没有存档；落一份盘，书库里才看得见这本书
         try:
             plan.save()
@@ -852,7 +1098,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _build_inner(self, job: Job, plan: Plan, formats: list[str],
                      font_scale: float = 1.0) -> dict:
-        source = get_source(plan.source_id)
+        source = PRTS
         titles = plan.pages()
         n = len(titles)
         job.emit("来源：%s · %d 个页面" % (source.name, n), self.P_FETCH[0],
@@ -949,13 +1195,26 @@ class Handler(BaseHTTPRequestHandler):
 
     def _settings_json(self) -> dict:
         s = load_settings()
+        from .. import deep as _deep
+        from .. import llm as _llm
+        from .. import localembed
+        vec = _deep.vec_stats()
         return {
             "author": author_name(),
             "out_root": s.get("out_root") or "",
             "root": self.app.root,
             "default_root": app_home(),
             "settings_path": settings_path(),
-            "sources_path": store_path(),
+            "llm": {"enabled": _llm.status()["enabled"],
+                    "base_url": s.get("llm_base_url") or "",
+                    "has_key": bool(s.get("llm_api_key")),
+                    "model": s.get("llm_model") or "",
+                    "embed_model": s.get("llm_embed_model") or "",
+                    "embed_local": bool(_llm.config().get("embed_local")),
+                    "local": localembed.status(),
+                    "vectors": vec.get("vectors", 0),
+                    "vector_model": vec.get("model") or "",
+                    "status": _llm.status()},
         }
 
     def _save_settings(self, body: dict):
@@ -969,7 +1228,7 @@ class Handler(BaseHTTPRequestHandler):
                     os.makedirs(root, exist_ok=True)
                 except OSError as e:
                     raise ValueError("无法创建该目录：%s" % e)
-                probe_file = os.path.join(root, ".wikitranslator-write-test")
+                probe_file = os.path.join(root, ".wikitransporter-write-test")
                 try:
                     with open(probe_file, "w", encoding="utf-8") as f:
                         f.write("ok")
@@ -978,8 +1237,76 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("这个位置不能写文件，请换一个目录（例如文档目录下）")
             patch["out_root"] = root
         save_settings(patch)
+        if any(str(k).startswith("llm_") for k in (body or {})):
+            from .. import llm
+            llm.save_settings_patch(body)
         self.app.root = workspace_dir()
         return self._json({"ok": True, "settings": self._settings_json()})
+
+    def _llm_test(self, body: dict):
+        """连通性探测：真发一次 chat，有向量模型再发一次 embeddings。"""
+        from .. import llm
+        cfg = llm.config()
+        if not llm.configured(cfg):
+            return self._json({"ok": False, "error": "先填接口地址和模型名再保存"})
+        t0 = time.time()
+        txt = llm.chat("只回复两个字：可用", timeout=15)
+        if not txt:
+            return self._json({"ok": False,
+                               "error": "连不上或没有返回：%s" % cfg["base_url"]})
+        emb = ""
+        if cfg["embed_model"]:
+            vs = llm.embed(["测试"])
+            emb = ("向量可用（%d 维）" % len(vs[0])) if vs else "向量接口不可用"
+        return self._json({"ok": True, "reply": (txt or "").strip()[:40],
+                           "embed": emb, "seconds": round(time.time() - t0, 2)})
+
+    def _start_embed(self):
+        from .. import deep, llm as _llm
+        if not _llm.config()["embed_model"]:
+            return self._json({"ok": False,
+                               "error": "先下载本地模型，或配置 API 的向量模型（llm_embed_model）"})
+        if getattr(self.app, "_embed_job", None) is not None:
+            return self._json({"ok": True, "job": self.app._embed_job.id, "running": True})
+
+        def work(job: Job):
+            return deep.build_vectors(progress=lambda d, t, m: job.step(d, t, m))
+
+        self.app._embed_job = self.app.start_job("embed", "向量索引", work)
+        return self._json({"ok": True, "job": self.app._embed_job.id})
+
+    def _start_model_download(self):
+        """下载本地向量模型（约 24MB）。下完自动切到本地模型，并提示重建向量索引。"""
+        from .. import localembed
+
+        running = getattr(self.app, "_model_job", None)
+        if running is not None and running.status == "running":
+            return self._json({"ok": True, "job": running.id, "running": True})
+
+        def work(job: Job):
+            job.emit("开始下载本地向量模型…", 0.01, phase="下载模型", done=0, total=2)
+
+            def progress(i, n, msg):
+                job.step(i, n, msg)
+
+            res = localembed.download(progress=progress)
+            if not res.get("ok"):
+                raise ValueError(res.get("error") or "下载失败")
+            save_settings({"llm_embed_local": "1", "llm_embed_model": localembed.NAME})
+            st = localembed.status()
+            job.emit("模型已就绪，可以去建向量索引了", 1.0, phase="完成")
+            return {"ok": True, "ready": True, "size_mb": st["size_mb"]}
+
+        self.app._model_job = self.app.start_job("model", "本地向量模型", work)
+        return self._json({"ok": True, "job": self.app._model_job.id})
+
+    def _model_remove(self):
+        from .. import localembed
+
+        localembed.remove()
+        save_settings({"llm_embed_local": "", "llm_embed_model": ""})
+        return self._json({"ok": True, "model": localembed.status(),
+                           "settings": self._settings_json()})
 
     def _pick_dir(self, body: dict):
         """弹出系统「选择文件夹」对话框（Windows 用 PowerShell 的 WinForms）。"""
@@ -1054,38 +1381,6 @@ class Handler(BaseHTTPRequestHandler):
         if not removed:
             raise ValueError("这本书已经不存在了")
         return self._json({"ok": True, "removed": removed})
-
-    def _save_source(self, body: dict):
-        data = body.get("source") or body
-        source = normalize_source(data)
-        users = load_user_sources()
-        users = [s for s in users if s.id != source.id]
-        users.append(source)
-        save_user_sources(users)
-        with self.app._lock:
-            self.app.catalogs.pop(source.id, None)
-        # 保存后立刻探测一次，把索引规模一起带回去
-        info = {}
-        try:
-            info = probe(source)
-        except (NetError, UnsafeURLError) as e:
-            info = {"ok": False, "error": str(e)}
-        return self._json({"ok": True, "source": self._source_json(source), "probe": info})
-
-    def _delete_source(self, body: dict):
-        sid = body.get("id") or ""
-        if not sid:
-            raise ValueError("缺少来源 id")
-        users = [s for s in load_user_sources() if s.id != sid]
-        save_user_sources(users)
-        with self.app._lock:
-            self.app.catalogs.pop(sid, None)
-        return self._json({"ok": True})
-
-    def _test_source(self, body: dict):
-        source = normalize_source(body.get("source") or body)
-        info = probe(source)
-        return self._json({"ok": True, "probe": info})
 
 
 # --------------------------------------------------------------------------

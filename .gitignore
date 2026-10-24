@@ -23,3 +23,12 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
+nul
+
+# 调试残留（探针脚本、诊断输出、服务日志）
+_*.py
+diag*.txt
+tmp_*.py
+server_out.txt
+server_err.txt
+arkplots_ref.json
