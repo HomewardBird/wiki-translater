@@ -24,7 +24,9 @@ Release 里是三个文件（1.6.0 起拆成命令行版和纯图形版，各约
 <!-- checksum:begin -->
 两个 exe 的 SHA256（自己核对一下再双击，值不对就别运行）：
 
-- 见最新 Release 页面（`scripts\release.ps1` 打包时会自动写进这一段）
+- `wiki-transporter.exe` — `5eca8d3f7809cf46c813ea505b6b18b26c1a0a8a8869d92478d625379570896d`
+- `WikiTransporter-GUI.exe` — `836693856b8ebcc6e3d77c8c9351a4dc9c863a5e8fb85170b24c58ae8ff4518e`
+
 <!-- checksum:end -->
 
 界面里的流程就三步：
