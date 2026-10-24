@@ -16,7 +16,7 @@ Release 里是三个文件（1.6.0 起拆成命令行版和纯图形版，各约
 |---|---|
 | `WikiTransporter-GUI.exe` | **图形版**，不弹控制台窗口。双击直接起界面：本机起一个服务，再用 Chrome / Edge 开一个应用窗口（Windows 自带 Edge 就够） |
 | `wiki-transporter.exe` | **命令行版**，带控制台。双击（不带参数）同样是图形界面；在终端里可以跑 `doctor` / `search` / `all` 等子命令，例如 `wiki-transporter.exe doctor` |
-| `sui-story.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json`。这个附件留在 v1.3.0 的 Release 里，不随每个版本重发 |
+| `sui-story.zip` | 已经排好的成品：`pdf\`（13 个 PDF）、`docx\`（13 个）、`epub\`（12 个），含全一册。不装 exe 也能直接读 |
 
 两个 exe 都是单文件、免安装：不装 Python、不写注册表，删掉 exe 就算卸载，且都不带任何剧情文本和计划文件。
 图形版为了不弹黑框去掉了控制台，崩溃信息会写在 exe 同目录的 `gui-error.log`；命令行版在终端里能直接看到报错。

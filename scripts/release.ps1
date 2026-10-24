@@ -18,6 +18,7 @@ param(
   [string]$Repo = 'HomewardBird/wiki-transporter',
   [string]$Token = $env:GITHUB_TOKEN,
   [string]$NotesFile = '',
+  [switch]$ForceUpload,
   [switch]$DryRun
 )
 
@@ -26,15 +27,20 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
 $assets = @(
-  @{ Path = 'dist\wiki-transporter.exe'; Name = 'wiki-transporter.exe' },
-  @{ Path = 'dist\WikiTransporter-GUI.exe'; Name = 'WikiTransporter-GUI.exe' }
+  @{ Path = 'dist\wiki-transporter.exe'; Name = 'wiki-transporter.exe'; Required = $true },
+  @{ Path = 'dist\WikiTransporter-GUI.exe'; Name = 'WikiTransporter-GUI.exe'; Required = $true },
+  @{ Path = 'release\sui.zip'; Name = 'sui-story.zip'; Required = $false }
 )
 
 foreach ($a in $assets) {
   if (-not (Test-Path $a.Path)) {
-    throw "找不到 $($a.Path)（先跑 pwsh -File scripts\build_exe.ps1）"
+    if ($a.Required) {
+      throw "找不到 $($a.Path)（先跑 pwsh -File scripts\build_exe.ps1）"
+    }
+    Write-Host "  跳过 $($a.Name)：没有 $($a.Path)" -ForegroundColor Yellow
   }
 }
+$assets = @($assets | Where-Object { Test-Path $_.Path })
 
 Write-Host '== 校验和 ==' -ForegroundColor Cyan
 $hashes = @{}
@@ -52,7 +58,7 @@ $begin = '<!-- checksum:begin -->'
 $end = '<!-- checksum:end -->'
 if ($readme.Contains($begin) -and $readme.Contains($end)) {
   $lines = @($begin, '两个 exe 的 SHA256（自己核对一下再双击，值不对就别运行）：', '')
-  foreach ($a in $assets) {
+  foreach ($a in @($assets | Where-Object { $_.Name -like '*.exe' })) {
     $lines += ('- `{0}` — `{1}`' -f $a.Name, $hashes[$a.Name])
   }
   $lines += @('', $end)
@@ -114,13 +120,19 @@ if ($existing) {
 
 Write-Host '== 上传附件 ==' -ForegroundColor Cyan
 foreach ($a in $assets) {
-  # 同名附件先删，否则重传会 422 already_exists
+  $localSize = (Get-Item $a.Path).Length
   $old = @($release.assets | Where-Object { $_.name -eq $a.Name })
+  $same = @($old | Where-Object { $_.size -eq $localSize })
+  if ($same.Count -gt 0 -and -not $ForceUpload) {
+    Write-Host "  跳过 $($a.Name)：线上已有同尺寸附件（$([math]::Round($localSize / 1MB, 1)) MB），要重传加 -ForceUpload"
+    continue
+  }
+  # 同名附件先删，否则重传会 422 already_exists
   foreach ($o in $old) {
     Invoke-RestMethod -Method Delete -Uri "$api/releases/assets/$($o.id)" -Headers $headers -TimeoutSec 30 | Out-Null
     Write-Host "  删掉旧附件 $($a.Name)"
   }
-  $sizeMb = [math]::Round((Get-Item $a.Path).Length / 1MB, 1)
+  $sizeMb = [math]::Round($localSize / 1MB, 1)
   Write-Host "  上传 $($a.Name)（$sizeMb MB，几十 MB 要等一会）"
   $encoded = [uri]::EscapeDataString($a.Name)
   $uploadUrl = "https://uploads.github.com/repos/$Repo/releases/$($release.id)/assets?name=$encoded"
