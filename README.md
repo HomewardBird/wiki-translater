@@ -10,14 +10,22 @@ MIT License · Python 3.9+ · 运行依赖只有 `python-docx`（PDF 收尾用 `
 
 ### 下载 exe（Windows，免安装）
 
-Release 里是两个文件：
+Release 里是三个文件（1.6.0 起拆成命令行版和纯图形版，各约 68 MB）：
 
 | 文件 | 内容 |
 |---|---|
-| `wiki-transporter.exe` | 单个可执行文件，约 48 MB。双击打开图形界面，不带任何剧情文本，也不带计划文件 |
-| `sui-story.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json` |
+| `WikiTransporter-GUI.exe` | **图形版**，不弹控制台窗口。双击直接起界面：本机起一个服务，再用 Chrome / Edge 开一个应用窗口（Windows 自带 Edge 就够） |
+| `wiki-transporter.exe` | **命令行版**，带控制台。双击（不带参数）同样是图形界面；在终端里可以跑 `doctor` / `search` / `all` 等子命令，例如 `wiki-transporter.exe doctor` |
+| `sui-story.zip` | 已经排好的成品：`sui/`（PDF / Word / EPUB，10 卷 + 全一册）以及计划文件 `sui.json`。这个附件留在 v1.3.0 的 Release 里，不随每个版本重发 |
 
-双击 exe 后，程序在本机起一个服务，再用 Chrome 或 Edge 打开一个应用窗口（Windows 自带 Edge 就够）。不装 Python、不写注册表，删掉 exe 就算卸载。
+两个 exe 都是单文件、免安装：不装 Python、不写注册表，删掉 exe 就算卸载，且都不带任何剧情文本和计划文件。
+图形版为了不弹黑框去掉了控制台，崩溃信息会写在 exe 同目录的 `gui-error.log`；命令行版在终端里能直接看到报错。
+
+<!-- checksum:begin -->
+两个 exe 的 SHA256（自己核对一下再双击，值不对就别运行）：
+
+- 见最新 Release 页面（`scripts\release.ps1` 打包时会自动写进这一段）
+<!-- checksum:end -->
 
 界面里的流程就三步：
 
@@ -345,9 +353,25 @@ pwsh -File scripts\build_exe.ps1            # 不带 plans：exe 是纯工具
 pwsh -File scripts\build_exe.ps1 -WithPlans  # 连 plans/ 和 builtin_plans/ 一起内嵌
 ```
 
-生成 `dist\wiki-transporter.exe`（单文件，约 48 MB）。原理是 PyInstaller 把 `wiki_transporter` 包（和 `wiki_transporter/gui/web`）塞进一个可执行文件，运行时解压到临时目录；`scripts/entry.py` 是打包入口，用来避开相对导入在脚本模式下失效的问题。
+一次出两个 exe，各约 68 MB：
 
-发布 Release 用两个附件：`dist\wiki-transporter.exe`，以及把 `out\sui\` 连同 `plans\sui.json` 打成的 `sui-story.zip`（`scripts\pack_release.ps1` 生成）。exe 不进仓库，成品 zip 也不进仓库。
+| 产物 | 配置 | 入口 | 控制台 |
+|---|---|---|---|
+| `dist\wiki-transporter.exe` | `wiki-transporter.spec` | `scripts/entry.py`（走 `cli.main`，不带参数就开界面） | 有 |
+| `dist\WikiTransporter-GUI.exe` | `WikiTransporter-GUI.spec` | `scripts/entry_gui.py`（直接 `run_gui`，崩溃写 `gui-error.log`） | 无 |
+
+两个 spec 都默认不内嵌 `plans/`：发出去的 exe 是纯工具。`-WithPlans` 会让脚本设 `WT_WITH_PLANS=1`，spec 才把 `plans/` 和 `wiki_transporter/builtin_plans/` 打进去。原理是 PyInstaller 把 `wiki_transporter` 包（含 `gui/web`）和 onnxruntime / tokenizers 二进制塞进单个可执行文件，运行时解压到临时目录；入口单独成文件是为了避开相对导入在脚本模式下失效。
+
+发布走 `scripts\release.ps1`：校验两个 exe、算 SHA256 并写回上面 README 的校验和段、用 `docs\release-<tag>.md` 作正文建 Release、再传附件（同名先删再传）。令牌只从 `$env:GITHUB_TOKEN` 读。
+
+```powershell
+$env:GITHUB_TOKEN = 'ghp_...'                 # 需要 repo 权限
+pwsh -File scripts\build_exe.ps1              # 两个 exe
+pwsh -File scripts\release.ps1 -Tag v1.6.0 -DryRun   # 先只看哈希、不调 API
+pwsh -File scripts\release.ps1 -Tag v1.6.0           # 建/更新 Release 并上传
+```
+
+岁家成品的 `sui-story.zip` 由 `scripts\pack_release.ps1` 生成（把 `out\sui\` 连同 `plans\sui.json` 打包），单独发在 v1.3.0 Release，不随每个版本重发。exe 与成品 zip 都不进仓库。
 
 ## 更新日志
 
